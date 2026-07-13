@@ -1,0 +1,23 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "components": [
+    {
+      "name": "libfoo",
+      "version": "1.2.3",
+      "type": "library",
+      "licenses": [{ "license": { "id": "MIT" } }]
+    },
+    {
+      "name": "openssl",
+      "version": "3.0.1",
+      "type": "library",
+      "licenses": [{ "license": { "id": "Apache-2.0" } }]
+    },
+    {
+      "name": "oldpkg",
+      "version": "0.9.0",
+      "type": "library"
+    }
+  ]
+}

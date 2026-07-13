@@ -1,0 +1,14 @@
+---
+# Pinning actions to full commit SHAs (a supply-chain best practice) pushes
+# some workflow lines past the default 80 columns, and `# vN` version markers
+# sit one space after the SHA. Relax those two rules; keep the rest of default.
+extends: default
+
+rules:
+  line-length:
+    max: 120
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    check-keys: false # allow the GitHub Actions `on:` key
+  document-start: disable
