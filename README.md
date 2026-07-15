@@ -41,6 +41,12 @@ $ sbom-diff old.json new.json
 ## Install
 
 ```sh
+curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/sbom-diff/main/install.sh | bash
+```
+
+Or with pipx directly:
+
+```sh
 pipx install .        # from a checkout
 # or: pip install sbom-diff
 ```
