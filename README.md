@@ -73,7 +73,7 @@ Full docs live in [`docs/`](docs/). Runnable examples live in
 
 ## Roadmap
 
-- [ ] PURL-based matching (rename-aware) instead of name matching
+- [x] PURL-based matching (rename-aware) instead of name matching
 - [ ] Vulnerability delta when SBOMs carry VEX data
 - [ ] GitHub Action posting the diff as a PR comment
 

@@ -10,12 +10,26 @@ Supports CycloneDX JSON and SPDX JSON (as produced by syft, trivy, etc.):
 
 import argparse
 import json
+import re
 import sys
 from collections import defaultdict
 
+# purl identity: everything up to the first version/qualifier/subpath marker,
+# e.g. "pkg:pypi/requests@2.31.0" -> "pkg:pypi/requests". Two components with
+# the same identity are the same package even if their SBOM "name" differs.
+_PURL_IDENTITY_RE = re.compile(r"[@?#]")
+
+
+def purl_identity(purl):
+    return _PURL_IDENTITY_RE.split(purl, 1)[0]
+
 
 def load_components(path):
-    """Return {name: {version, ...}} plus license info from either format."""
+    """Return {key: {name, version, ...}} plus license info from either format.
+
+    Keyed by PURL identity when the component carries one (rename-aware: the
+    same purl matches across a name change), falling back to name otherwise.
+    """
     with open(path) as fh:
         doc = json.load(fh)
 
@@ -28,20 +42,37 @@ def load_components(path):
                 or lic.get("expression")
                 for lic in c.get("licenses", [])
             ]
-            comps[c.get("name", "?")] = {
+            name = c.get("name", "?")
+            purl = c.get("purl")
+            key = purl_identity(purl) if purl else name
+            comps[key] = {
+                "name": name,
                 "version": c.get("version", "?"),
                 "type": c.get("type", "library"),
                 "licenses": sorted(filter(None, licenses)),
+                "purl": purl,
             }
     elif "spdxVersion" in doc:
         for pkg in doc.get("packages", []):
             if pkg.get("name") == doc.get("name"):
                 continue  # skip the document/root package
             lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
-            comps[pkg.get("name", "?")] = {
+            name = pkg.get("name", "?")
+            purl = next(
+                (
+                    ref.get("referenceLocator")
+                    for ref in pkg.get("externalRefs", [])
+                    if ref.get("referenceType") == "purl"
+                ),
+                None,
+            )
+            key = purl_identity(purl) if purl else name
+            comps[key] = {
+                "name": name,
                 "version": pkg.get("versionInfo", "?"),
                 "type": "library",
                 "licenses": [lic] if lic and lic != "NOASSERTION" else [],
+                "purl": purl,
             }
     else:
         raise ValueError(f"{path}: not a recognizable CycloneDX or SPDX JSON SBOM")
@@ -67,24 +98,38 @@ def semver_jump(old, new):
 def diff(old, new):
     added = {k: new[k] for k in new.keys() - old.keys()}
     removed = {k: old[k] for k in old.keys() - new.keys()}
+    common = old.keys() & new.keys()
+    # Same purl identity but a different SBOM "name" -> a rename, reported
+    # separately rather than as a version jump.
+    renamed = {k: (old[k], new[k]) for k in common if old[k]["name"] != new[k]["name"]}
     changed = {
         k: (old[k], new[k])
-        for k in old.keys() & new.keys()
-        if old[k]["version"] != new[k]["version"]
+        for k in common
+        if old[k]["version"] != new[k]["version"] and old[k]["name"] == new[k]["name"]
     }
     license_changes = {
-        k: (old[k]["licenses"], new[k]["licenses"])
-        for k in old.keys() & new.keys()
+        k: (old[k], new[k])
+        for k in common
         if old[k]["licenses"] != new[k]["licenses"] and (old[k]["licenses"] or new[k]["licenses"])
     }
-    return added, removed, changed, license_changes
+    return added, removed, changed, license_changes, renamed
 
 
-def explain(added, removed, changed, license_changes):
+def explain(added, removed, changed, license_changes, renamed=None):
+    renamed = renamed or {}
     lines = []
     jumps = defaultdict(list)
-    for name, (o, n) in sorted(changed.items()):
-        jumps[semver_jump(o["version"], n["version"])].append((name, o["version"], n["version"]))
+    for o, n in sorted(changed.values(), key=lambda pair: pair[0]["name"]):
+        jumps[semver_jump(o["version"], n["version"])].append(
+            (o["name"], o["version"], n["version"])
+        )
+
+    if renamed:
+        lines.append(f"## Renamed ({len(renamed)})\n")
+        for _, (o, n) in sorted(renamed.items(), key=lambda kv: kv[1][0]["name"]):
+            note = f" ({o['version']} → {n['version']})" if o["version"] != n["version"] else ""
+            lines.append(f"- **{o['name']}** → **{n['name']}**{note}")
+        lines.append("")
 
     if jumps["major"]:
         lines.append("## ⚠ Major version jumps (review breaking changes)\n")
@@ -101,17 +146,23 @@ def explain(added, removed, changed, license_changes):
             lines.append("")
     if added:
         lines.append(f"## New dependencies ({len(added)})\n")
-        lines += [f"- {n} {c['version']}" for n, c in sorted(added.items())]
+        lines += [
+            f"- {c['name']} {c['version']}" for c in sorted(added.values(), key=lambda c: c["name"])
+        ]
         lines.append("")
     if removed:
         lines.append(f"## Removed dependencies ({len(removed)})\n")
-        lines += [f"- {n} {c['version']}" for n, c in sorted(removed.items())]
+        lines += [
+            f"- {c['name']} {c['version']}"
+            for c in sorted(removed.values(), key=lambda c: c["name"])
+        ]
         lines.append("")
     if license_changes:
         lines.append("## ⚠ License changes\n")
         lines += [
-            f"- **{n}**: {', '.join(o) or '(none)'} → {', '.join(w) or '(none)'}"
-            for n, (o, w) in sorted(license_changes.items())
+            f"- **{o['name']}**: {', '.join(o['licenses']) or '(none)'} → "
+            f"{', '.join(n['licenses']) or '(none)'}"
+            for o, n in sorted(license_changes.values(), key=lambda pair: pair[0]["name"])
         ]
         lines.append("")
 
@@ -120,6 +171,8 @@ def explain(added, removed, changed, license_changes):
         f"{total} dependency change(s): {len(added)} added, {len(removed)} removed, "
         f"{len(changed)} updated ({len(jumps['major'])} major)"
     )
+    if renamed:
+        summary += f", {len(renamed)} renamed"
     return summary, "\n".join(lines)
 
 
@@ -137,8 +190,10 @@ def main(argv=None):
     )
     args = p.parse_args(argv)
 
-    added, removed, changed, licenses = diff(load_components(args.old), load_components(args.new))
-    summary, body = explain(added, removed, changed, licenses)
+    added, removed, changed, licenses, renamed = diff(
+        load_components(args.old), load_components(args.new)
+    )
+    summary, body = explain(added, removed, changed, licenses, renamed)
 
     if args.json:
         json.dump(
@@ -147,6 +202,7 @@ def main(argv=None):
                 "added": added,
                 "removed": removed,
                 "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
+                "renamed": {k: {"old": o, "new": n} for k, (o, n) in renamed.items()},
                 "license_changes": {k: {"old": o, "new": n} for k, (o, n) in licenses.items()},
             },
             sys.stdout,

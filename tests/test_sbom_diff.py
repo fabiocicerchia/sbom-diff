@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from sbom_diff import diff, load_components, main, semver_jump
+from sbom_diff import diff, load_components, main, purl_identity, semver_jump
 
 
 def cyclonedx(components):
@@ -45,10 +45,36 @@ def test_semver_classification():
 
 def test_diff_finds_all_change_kinds(sboms):
     old, new = sboms
-    added, removed, changed, licenses = diff(load_components(old), load_components(new))
+    added, removed, changed, licenses, renamed = diff(load_components(old), load_components(new))
     assert "requests" in added and "left-pad" in removed
     assert changed["openssl"][1]["version"] == "4.0.0"
-    assert licenses["openssl"] == (["Apache-2.0"], ["GPL-3.0"])
+    assert licenses["openssl"][0]["licenses"] == ["Apache-2.0"]
+    assert licenses["openssl"][1]["licenses"] == ["GPL-3.0"]
+    assert renamed == {}
+
+
+def test_purl_identity():
+    assert purl_identity("pkg:pypi/requests@2.31.0") == "pkg:pypi/requests"
+    assert purl_identity("pkg:pypi/requests@2.31.0?extra=x") == "pkg:pypi/requests"
+    assert purl_identity("pkg:pypi/requests") == "pkg:pypi/requests"
+
+
+def test_purl_matching_is_rename_aware(tmp_path):
+    # Same purl, different "name" field between scans -> matched as a rename,
+    # not add+remove.
+    old = cyclonedx(
+        [{"name": "python-requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}]
+    )
+    new = cyclonedx([{"name": "requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}])
+    old_path, new_path = write(tmp_path, "old.json", old), write(tmp_path, "new.json", new)
+
+    added, removed, changed, licenses, renamed = diff(
+        load_components(old_path), load_components(new_path)
+    )
+    assert not added and not removed and not changed
+    assert len(renamed) == 1
+    o, n = next(iter(renamed.values()))
+    assert o["name"] == "python-requests" and n["name"] == "requests"
 
 
 def test_fail_on_major(sboms):
