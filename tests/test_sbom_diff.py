@@ -2,7 +2,15 @@ import json
 
 import pytest
 
-from sbom_diff import diff, load_components, main, purl_identity, semver_jump
+from sbom_diff import (
+    diff,
+    diff_vulnerabilities,
+    load_components,
+    load_vulnerabilities,
+    main,
+    purl_identity,
+    semver_jump,
+)
 
 
 def cyclonedx(components):
@@ -75,6 +83,42 @@ def test_purl_matching_is_rename_aware(tmp_path):
     assert len(renamed) == 1
     o, n = next(iter(renamed.values()))
     assert o["name"] == "python-requests" and n["name"] == "requests"
+
+
+def test_vulnerability_delta():
+    added, removed, changed = diff_vulnerabilities(
+        {
+            "CVE-2023-1111": {"state": "affected", "severity": "high"},
+            "CVE-2023-2222": {"state": "affected", "severity": None},
+        },
+        {
+            "CVE-2023-2222": {"state": "not_affected", "severity": None},
+            "CVE-2023-3333": {"state": "affected", "severity": None},
+        },
+    )
+    assert "CVE-2023-3333" in added
+    assert "CVE-2023-1111" in removed
+    assert changed["CVE-2023-2222"] == ("affected", "not_affected")
+
+
+def test_load_vulnerabilities(tmp_path):
+    doc = cyclonedx([])
+    doc["vulnerabilities"] = [
+        {
+            "id": "CVE-2023-1111",
+            "analysis": {"state": "affected"},
+            "ratings": [{"severity": "high"}],
+        }
+    ]
+    path = write(tmp_path, "sbom.json", doc)
+    assert load_vulnerabilities(path) == {
+        "CVE-2023-1111": {"state": "affected", "severity": "high"}
+    }
+
+
+def test_load_vulnerabilities_absent(sboms):
+    old, _ = sboms
+    assert load_vulnerabilities(old) == {}
 
 
 def test_fail_on_major(sboms):

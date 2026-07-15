@@ -14,9 +14,10 @@ new.json ─┘
 ## Components
 
 - **parse** — normalize CycloneDX or SPDX JSON into `{key: {name, version,
-  type, licenses, purl}}`.
+  type, licenses, purl}}`, plus `{id: {state, severity}}` for any embedded
+  CycloneDX vulnerabilities/VEX data.
 - **compare** — set operations on the match keys: added, removed, changed,
-  renamed.
+  renamed; same for vulnerability IDs (added/removed/state-changed).
 - **classify** — bucket version changes into major / minor / patch / other and
   flag license changes.
 - **render** — emit markdown (default) or JSON (`--json`).

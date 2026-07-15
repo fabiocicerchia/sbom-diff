@@ -79,6 +79,38 @@ def load_components(path):
     return comps
 
 
+def load_vulnerabilities(path):
+    """Return {id: {state, severity}} from a CycloneDX doc's embedded VEX data.
+
+    No-op (empty dict) for SBOMs without a "vulnerabilities" array, e.g. SPDX
+    or a CycloneDX SBOM that wasn't augmented with vulnerability/VEX info.
+    """
+    with open(path) as fh:
+        doc = json.load(fh)
+
+    vulns = {}
+    for v in doc.get("vulnerabilities", []) or []:
+        analysis = v.get("analysis") or {}
+        vulns[v.get("id", "?")] = {
+            "state": analysis.get("state", "unknown"),
+            "severity": next(
+                (r.get("severity") for r in v.get("ratings", []) if r.get("severity")), None
+            ),
+        }
+    return vulns
+
+
+def diff_vulnerabilities(old, new):
+    added = {k: new[k] for k in new.keys() - old.keys()}
+    removed = {k: old[k] for k in old.keys() - new.keys()}
+    changed = {
+        k: (old[k]["state"], new[k]["state"])
+        for k in old.keys() & new.keys()
+        if old[k]["state"] != new[k]["state"]
+    }
+    return added, removed, changed
+
+
 def semver_jump(old, new):
     """Classify a version bump: major / minor / patch / other."""
     try:
@@ -115,7 +147,7 @@ def diff(old, new):
     return added, removed, changed, license_changes, renamed
 
 
-def explain(added, removed, changed, license_changes, renamed=None):
+def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
     renamed = renamed or {}
     lines = []
     jumps = defaultdict(list)
@@ -166,6 +198,23 @@ def explain(added, removed, changed, license_changes, renamed=None):
         ]
         lines.append("")
 
+    added_v, removed_v, changed_v = vulns or ({}, {}, {})
+    if added_v or removed_v or changed_v:
+        lines.append("## Vulnerability changes (VEX)\n")
+        lines += [
+            f"- ⚠ **{vid}** newly reported ({v['state']}{', ' + v['severity'] if v['severity'] else ''})"
+            for vid, v in sorted(added_v.items())
+        ]
+        lines += [
+            f"- ✅ **{vid}** no longer reported (was: {v['state']})"
+            for vid, v in sorted(removed_v.items())
+        ]
+        lines += [
+            f"- 🔄 **{vid}**: {old_state} → {new_state}"
+            for vid, (old_state, new_state) in sorted(changed_v.items())
+        ]
+        lines.append("")
+
     total = len(added) + len(removed) + len(changed)
     summary = (
         f"{total} dependency change(s): {len(added)} added, {len(removed)} removed, "
@@ -193,7 +242,12 @@ def main(argv=None):
     added, removed, changed, licenses, renamed = diff(
         load_components(args.old), load_components(args.new)
     )
-    summary, body = explain(added, removed, changed, licenses, renamed)
+    vuln_added, vuln_removed, vuln_changed = diff_vulnerabilities(
+        load_vulnerabilities(args.old), load_vulnerabilities(args.new)
+    )
+    summary, body = explain(
+        added, removed, changed, licenses, renamed, (vuln_added, vuln_removed, vuln_changed)
+    )
 
     if args.json:
         json.dump(
@@ -204,6 +258,11 @@ def main(argv=None):
                 "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
                 "renamed": {k: {"old": o, "new": n} for k, (o, n) in renamed.items()},
                 "license_changes": {k: {"old": o, "new": n} for k, (o, n) in licenses.items()},
+                "vulnerabilities": {
+                    "added": vuln_added,
+                    "removed": vuln_removed,
+                    "changed": {vid: {"old": o, "new": n} for vid, (o, n) in vuln_changed.items()},
+                },
             },
             sys.stdout,
             indent=2,
