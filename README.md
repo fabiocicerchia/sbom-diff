@@ -71,12 +71,6 @@ runnable pair of SBOMs.
 Full docs live in [`docs/`](docs/). Runnable examples live in
 [`examples/`](examples/).
 
-## Roadmap
-
-- [x] PURL-based matching (rename-aware) instead of name matching
-- [x] Vulnerability delta when SBOMs carry VEX data
-- [x] GitHub Action posting the diff as a PR comment
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). By participating you agree to the
