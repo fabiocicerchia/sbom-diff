@@ -100,9 +100,12 @@ def load_vulnerabilities(path):
     return vulns
 
 
+def _added_removed(old, new):
+    return {k: new[k] for k in new.keys() - old.keys()}, {k: old[k] for k in old.keys() - new.keys()}
+
+
 def diff_vulnerabilities(old, new):
-    added = {k: new[k] for k in new.keys() - old.keys()}
-    removed = {k: old[k] for k in old.keys() - new.keys()}
+    added, removed = _added_removed(old, new)
     changed = {
         k: (old[k]["state"], new[k]["state"])
         for k in old.keys() & new.keys()
@@ -128,8 +131,7 @@ def semver_jump(old, new):
 
 
 def diff(old, new):
-    added = {k: new[k] for k in new.keys() - old.keys()}
-    removed = {k: old[k] for k in old.keys() - new.keys()}
+    added, removed = _added_removed(old, new)
     common = old.keys() & new.keys()
     # Same purl identity but a different SBOM "name" -> a rename, reported
     # separately rather than as a version jump.
