@@ -76,7 +76,7 @@ def test_purl_matching_is_rename_aware(tmp_path):
     new = cyclonedx([{"name": "requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}])
     old_path, new_path = write(tmp_path, "old.json", old), write(tmp_path, "new.json", new)
 
-    added, removed, changed, licenses, renamed = diff(
+    added, removed, changed, _licenses, renamed = diff(
         load_components(old_path), load_components(new_path)
     )
     assert not added and not removed and not changed
