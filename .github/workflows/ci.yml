@@ -10,6 +10,10 @@ permissions:
 
 # Linting/formatting live in code-quality.yml (ruff via pre-commit); this
 # workflow runs the Python test matrix and the packaging build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
