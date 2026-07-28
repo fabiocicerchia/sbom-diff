@@ -41,11 +41,18 @@ runs:
     - name: Run sbom-diff
       id: diff
       shell: bash
+      env:
+        # Passed through env vars, not interpolated into the script — these
+        # are caller-supplied action inputs, and raw ${{ }} interpolation
+        # into a run: block is a shell-injection vector.
+        OLD_SBOM: ${{ inputs.old-sbom }}
+        NEW_SBOM: ${{ inputs.new-sbom }}
+        FAIL_ON: ${{ inputs.fail-on }}
       run: |
         set +e
-        args=("${{ inputs.old-sbom }}" "${{ inputs.new-sbom }}")
-        if [ -n "${{ inputs.fail-on }}" ]; then
-          args+=(--fail-on "${{ inputs.fail-on }}")
+        args=("$OLD_SBOM" "$NEW_SBOM")
+        if [ -n "$FAIL_ON" ]; then
+          args+=(--fail-on "$FAIL_ON")
         fi
         sbom-diff "${args[@]}" | tee sbom-diff-output.md
         exit_code="${PIPESTATUS[0]}"
