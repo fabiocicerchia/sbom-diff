@@ -43,7 +43,7 @@ jobs:
           output: trivy.sarif
           severity: CRITICAL,HIGH
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v3
+        uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1  # v4.37.2
         with:
           sarif_file: trivy.sarif
 
@@ -60,4 +60,4 @@ jobs:
       - uses: github/codeql-action/init@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v3
         with:
           languages: python
-      - uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v3
+      - uses: github/codeql-action/analyze@e0647621c2984b5ed2f768cb892365bf2a616ad1  # v4.37.2

@@ -101,7 +101,9 @@ def load_vulnerabilities(path):
 
 
 def _added_removed(old, new):
-    return {k: new[k] for k in new.keys() - old.keys()}, {k: old[k] for k in old.keys() - new.keys()}
+    return {k: new[k] for k in new.keys() - old.keys()}, {
+        k: old[k] for k in old.keys() - new.keys()
+    }
 
 
 def diff_vulnerabilities(old, new):
