@@ -7,7 +7,6 @@
 [![security](https://github.com/fabiocicerchia/sbom-diff/actions/workflows/security.yml/badge.svg)](https://github.com/fabiocicerchia/sbom-diff/actions/workflows/security.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/fabiocicerchia/sbom-diff/badge)](https://securityscorecards.dev/viewer/?uri=github.com/fabiocicerchia/sbom-diff)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fsbom-diff.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fsbom-diff?ref=badge_shield)
 [![Release](https://img.shields.io/github/v/release/fabiocicerchia/sbom-diff)](https://github.com/fabiocicerchia/sbom-diff/releases)
 
 Diffs two SBOMs (**CycloneDX or SPDX JSON**) and explains the dependency
