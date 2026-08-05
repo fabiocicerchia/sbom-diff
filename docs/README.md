@@ -1,6 +1,4 @@
 # Documentation
 
-- [Getting Started](getting-started.md) — install and first diff.
-- [Architecture](architecture.md) — how sbom-diff parses, compares, and renders.
-
-Runnable examples live in [`../examples/`](../examples/).
+- [Architecture](architecture.md) — high-level design and components.
+- [Getting Started](getting-started.md) — setup, first run and day-to-day use.
