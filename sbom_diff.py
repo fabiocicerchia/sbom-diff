@@ -24,6 +24,93 @@ def purl_identity(purl):
     return _PURL_IDENTITY_RE.split(purl, 1)[0]
 
 
+# purl type -> the ecosystem name people recognise. Unknown types pass through
+# rather than being dropped: an SBOM full of "deb" components is still a diff
+# worth reading, even if this tool has no opinion about apt.
+ECOSYSTEM = {
+    "npm": "npm",
+    "pypi": "PyPI",
+    "cargo": "Cargo",
+    "gem": "RubyGems",
+    "composer": "Composer",
+    "golang": "Go",
+    "maven": "Maven",
+    "nuget": "NuGet",
+    "deb": "deb",
+    "rpm": "rpm",
+    "apk": "apk",
+    "github": "GitHub Actions",
+}
+
+
+def ecosystem(purl):
+    if not purl or not purl.startswith("pkg:"):
+        return "unknown"
+    kind = purl[4:].split("/", 1)[0].lower()
+    return ECOSYSTEM.get(kind, kind)
+
+
+def compare_versions(old, new):
+    """Order two versions: -1 if old < new, 1 if old > new, 0 if equal.
+
+    Enough of semver to tell an upgrade from a downgrade, falling back to a
+    string compare for anything not numeric-dotted. semver_jump says how big a
+    change is; this says which direction it went.
+    """
+
+    def split(v):
+        # The pre-release has to come off before the dots: a suffix makes a
+        # version *older* than the same version without one, the opposite of
+        # how the core segments compare. Build metadata (+sha) carries no
+        # precedence, a pre-release (-rc1) does.
+        s = str(v).lstrip("v")
+        marker = re.search(r"[-+]", s)
+        core = s[: marker.start()] if marker else s
+        pre = ""
+        if marker and s[marker.start()] == "-":
+            pre = s[marker.start() + 1 :].split("+")[0]
+        return [int(p) if p.isdigit() else p for p in core.split(".")], pre
+
+    left, left_pre = split(old)
+    right, right_pre = split(new)
+
+    for i in range(max(len(left), len(right))):
+        # A missing segment is zero, so 1.2 and 1.2.0 are the same version.
+        a = left[i] if i < len(left) else 0
+        b = right[i] if i < len(right) else 0
+        if a == b:
+            continue
+        if isinstance(a, int) and isinstance(b, int):
+            return -1 if a < b else 1
+        return -1 if str(a) < str(b) else 1
+
+    if left_pre == right_pre:
+        return 0
+    if not left_pre:
+        return 1
+    if not right_pre:
+        return -1
+    return -1 if left_pre < right_pre else 1
+
+
+def _insert(comps, key, comp):
+    """Keep one entry per identity, preferring the higher version.
+
+    A component catalogued twice at the same version is the same component; at
+    two different versions the higher one wins, so the diff does not report a
+    change that is really two copies coexisting. `direct` is sticky — listed as
+    a direct dependency once is enough.
+    """
+    seen = comps.get(key)
+    if seen is None:
+        comps[key] = comp
+    elif compare_versions(seen["version"], comp["version"]) < 0:
+        comp["direct"] = comp["direct"] or seen["direct"]
+        comps[key] = comp
+    elif comp["direct"]:
+        seen["direct"] = True
+
+
 def load_components(path):
     """Return {key: {name, version, ...}} plus license info from either format.
 
@@ -35,7 +122,29 @@ def load_components(path):
 
     comps = {}
     if "components" in doc or doc.get("bomFormat") == "CycloneDX":
+        root = (doc.get("metadata") or {}).get("component") or {}
+        root_ref, root_name = root.get("bom-ref"), root.get("name")
+
+        # The dependency graph, when present, is how "direct" is known. Without
+        # it every component reports as transitive — the honest default, since
+        # claiming a dependency is direct without evidence is worse than not
+        # saying.
+        direct_refs = set()
+        if root_ref:
+            entry = next(
+                (d for d in doc.get("dependencies") or [] if d.get("ref") == root_ref), None
+            )
+            if entry:
+                direct_refs = set(entry.get("dependsOn") or [])
+
         for c in doc.get("components", []):
+            # The project is not one of its own dependencies. syft catalogues it
+            # under a different bom-ref from metadata.component when scanning a
+            # directory, so the name is checked too.
+            if root_ref and c.get("bom-ref") == root_ref:
+                continue
+            if root_name and c.get("name") == root_name:
+                continue
             licenses = [
                 lic.get("license", {}).get("id")
                 or lic.get("license", {}).get("name")
@@ -45,17 +154,45 @@ def load_components(path):
             name = c.get("name", "?")
             purl = c.get("purl")
             key = purl_identity(purl) if purl else name
-            comps[key] = {
-                "name": name,
-                "version": c.get("version", "?"),
-                "type": c.get("type", "library"),
-                "licenses": sorted(filter(None, licenses)),
-                "purl": purl,
-            }
+            _insert(
+                comps,
+                key,
+                {
+                    "name": name,
+                    "version": c.get("version", "?"),
+                    "type": c.get("type", "library"),
+                    "ecosystem": ecosystem(purl),
+                    "licenses": sorted(filter(None, licenses)),
+                    "purl": purl,
+                    "direct": c.get("bom-ref") in direct_refs,
+                },
+            )
     elif "spdxVersion" in doc:
+        root_ref = next(iter(doc.get("documentDescribes") or []), None)
+        root_name = next(
+            (p.get("name") for p in doc.get("packages", []) if p.get("SPDXID") == root_ref),
+            doc.get("name"),
+        )
+
+        # SPDX states the relationship in either direction depending on which
+        # tool produced the document, so both are read.
+        direct_refs = set()
+        for rel in doc.get("relationships") or []:
+            if not root_ref:
+                break
+            if rel.get("relationshipType") == "DEPENDS_ON" and rel.get("spdxElementId") == root_ref:
+                direct_refs.add(rel.get("relatedSpdxElement"))
+            if (
+                rel.get("relationshipType") == "DEPENDENCY_OF"
+                and rel.get("relatedSpdxElement") == root_ref
+            ):
+                direct_refs.add(rel.get("spdxElementId"))
+
         for pkg in doc.get("packages", []):
-            if pkg.get("name") == doc.get("name"):
+            if pkg.get("SPDXID") == root_ref:
                 continue  # skip the document/root package
+            if root_name and pkg.get("name") == root_name:
+                continue
             lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
             name = pkg.get("name", "?")
             purl = next(
@@ -67,13 +204,19 @@ def load_components(path):
                 None,
             )
             key = purl_identity(purl) if purl else name
-            comps[key] = {
-                "name": name,
-                "version": pkg.get("versionInfo", "?"),
-                "type": "library",
-                "licenses": [lic] if lic and lic != "NOASSERTION" else [],
-                "purl": purl,
-            }
+            _insert(
+                comps,
+                key,
+                {
+                    "name": name,
+                    "version": pkg.get("versionInfo", "?"),
+                    "type": "library",
+                    "ecosystem": ecosystem(purl),
+                    "licenses": [lic] if lic and lic not in ("NOASSERTION", "NONE") else [],
+                    "purl": purl,
+                    "direct": pkg.get("SPDXID") in direct_refs,
+                },
+            )
     else:
         raise ValueError(f"{path}: not a recognizable CycloneDX or SPDX JSON SBOM")
     return comps
@@ -151,13 +294,82 @@ def diff(old, new):
     return added, removed, changed, license_changes, renamed
 
 
+def is_downgrade(old, new):
+    # compare_versions returns 1 when the first argument is the higher one, so
+    # a downgrade is the old version sorting *above* the new one.
+    return compare_versions(old["version"], new["version"]) > 0
+
+
+def counts(added, removed, changed, license_changes):
+    """Headline numbers, including the direct/transitive split callers gate on.
+
+    The transitive count is the one nobody sees in a pull request diff and
+    everybody cares about once it is put in front of them.
+    """
+    transitive = sum(1 for c in added.values() if not c.get("direct"))
+    return {
+        "added": len(added),
+        "added_direct": len(added) - transitive,
+        "added_transitive": transitive,
+        "removed": len(removed),
+        "changed": len(changed),
+        "license_changed": len(license_changes),
+        "downgrades": sum(1 for o, n in changed.values() if is_downgrade(o, n)),
+    }
+
+
+def policy_failures(added, license_changes, totals, policy):
+    """Reasons the check should fail. Empty means pass.
+
+    Every threshold is opt-in: a dependency review that fails by default is a
+    dependency review that gets disabled by default.
+    """
+    fails = []
+    max_added = policy.get("max_added")
+    if max_added is not None and totals["added"] > max_added:
+        fails.append(f"{totals['added']} components added, over the limit of {max_added}")
+
+    max_transitive = policy.get("max_added_transitive")
+    if max_transitive is not None and totals["added_transitive"] > max_transitive:
+        fails.append(
+            f"{totals['added_transitive']} transitive components added, "
+            f"over the limit of {max_transitive}"
+        )
+
+    if policy.get("fail_on_downgrade") and totals["downgrades"]:
+        fails.append(
+            f"{totals['downgrades']} component(s) downgraded — usually a lockfile "
+            "conflict resolved the wrong way"
+        )
+    if policy.get("fail_on_license_change") and totals["license_changed"]:
+        fails.append(f"{totals['license_changed']} licence change(s)")
+
+    denied = {lic.lower() for lic in policy.get("deny_licenses") or []}
+    if denied:
+        # Checked on what the change *introduces*: components added, and the
+        # new side of a licence that changed under a dependency already there.
+        candidates = list(added.values()) + [n for _o, n in license_changes.values()]
+        hits = [
+            f"{c['name']} ({lic})"
+            for c in candidates
+            for lic in c["licenses"]
+            if lic.lower() in denied
+        ]
+        if hits:
+            fails.append(f"denied licence(s): {', '.join(sorted(set(hits)))}")
+    return fails
+
+
 def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
     renamed = renamed or {}
     lines = []
     jumps = defaultdict(list)
     for o, n in sorted(changed.values(), key=lambda pair: pair[0]["name"]):
+        # A downgrade is flagged wherever it lands: 2.0.0 -> 1.9.0 is classified
+        # "major" like any other, and reads as an upgrade unless it is labelled.
+        note = " *(downgrade)*" if is_downgrade(o, n) else ""
         jumps[semver_jump(o["version"], n["version"])].append(
-            (o["name"], o["version"], n["version"])
+            (o["name"], o["version"], n["version"], note)
         )
 
     if renamed:
@@ -169,7 +381,7 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
 
     if jumps["major"]:
         lines.append("## ⚠ Major version jumps (review breaking changes)\n")
-        lines += [f"- **{n}**: {o} → {v}" for n, o, v in jumps["major"]]
+        lines += [f"- **{n}**: {o} → {v}{note}" for n, o, v, note in jumps["major"]]
         lines.append("")
     for label, key in (
         ("Minor updates", "minor"),
@@ -178,12 +390,16 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
     ):
         if jumps[key]:
             lines.append(f"## {label}\n")
-            lines += [f"- {n}: {o} → {v}" for n, o, v in jumps[key]]
+            lines += [f"- {n}: {o} → {v}{note}" for n, o, v, note in jumps[key]]
             lines.append("")
     if added:
-        lines.append(f"## New dependencies ({len(added)})\n")
+        transitive = sum(1 for c in added.values() if not c.get("direct"))
+        heading = f"## New dependencies ({len(added)}"
+        heading += f", {transitive} transitive)\n" if transitive else ")\n"
+        lines.append(heading)
         lines += [
-            f"- {c['name']} {c['version']}" for c in sorted(added.values(), key=lambda c: c["name"])
+            f"- {c['name']} {c['version']}" + ("" if c.get("direct") else " _(transitive)_")
+            for c in sorted(added.values(), key=lambda c: c["name"])
         ]
         lines.append("")
     if removed:
@@ -220,10 +436,17 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
         lines.append("")
 
     total = len(added) + len(removed) + len(changed)
+    transitive = sum(1 for c in added.values() if not c.get("direct"))
+    added_desc = f"{len(added)} added"
+    if transitive:
+        added_desc += f" ({len(added) - transitive} direct, {transitive} transitive)"
     summary = (
-        f"{total} dependency change(s): {len(added)} added, {len(removed)} removed, "
+        f"{total} dependency change(s): {added_desc}, {len(removed)} removed, "
         f"{len(changed)} updated ({len(jumps['major'])} major)"
     )
+    downgrades = sum(1 for o, n in changed.values() if is_downgrade(o, n))
+    if downgrades:
+        summary += f", {downgrades} downgraded"
     if renamed:
         summary += f", {len(renamed)} renamed"
     return summary, "\n".join(lines)
@@ -241,6 +464,27 @@ def main(argv=None):
         choices=["any", "major", "license"],
         help="exit 1 on: any change / major bumps / license changes",
     )
+    p.add_argument("--max-added", type=int, help="exit 1 if more than N components are added")
+    p.add_argument(
+        "--max-added-transitive",
+        type=int,
+        help="exit 1 if more than N *transitive* components are added",
+    )
+    p.add_argument(
+        "--fail-on-downgrade",
+        action="store_true",
+        help="exit 1 when a component moves to a lower version",
+    )
+    p.add_argument(
+        "--fail-on-license-change",
+        action="store_true",
+        help="exit 1 when an existing component changes license",
+    )
+    p.add_argument(
+        "--deny-licenses",
+        default="",
+        help="comma/newline separated license IDs that must not appear on an added component",
+    )
     args = p.parse_args(argv)
 
     added, removed, changed, licenses, renamed = diff(
@@ -253,10 +497,16 @@ def main(argv=None):
         added, removed, changed, licenses, renamed, (vuln_added, vuln_removed, vuln_changed)
     )
 
+    totals = counts(added, removed, changed, licenses)
+
     if args.json:
         json.dump(
             {
                 "summary": summary,
+                # The rendered report travels with the numbers so a caller that
+                # wants both does not have to run the diff twice.
+                "markdown": f"# SBOM diff\n\n{summary}\n\n{body}",
+                "counts": totals,
                 "added": added,
                 "removed": removed,
                 "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
@@ -274,6 +524,23 @@ def main(argv=None):
     else:
         print(f"# SBOM diff\n\n{summary}\n\n{body}")
 
+    fails = policy_failures(
+        added,
+        licenses,
+        totals,
+        {
+            "max_added": args.max_added,
+            "max_added_transitive": args.max_added_transitive,
+            "fail_on_downgrade": args.fail_on_downgrade,
+            "fail_on_license_change": args.fail_on_license_change,
+            "deny_licenses": [
+                s.strip() for s in re.split(r"[,\n]", args.deny_licenses) if s.strip()
+            ],
+        },
+    )
+    for reason in fails:
+        print(f"sbom-diff: {reason}", file=sys.stderr)
+
     if args.fail_on == "any" and (added or removed or changed):
         return 1
     if args.fail_on == "major" and any(
@@ -282,7 +549,7 @@ def main(argv=None):
         return 1
     if args.fail_on == "license" and licenses:
         return 1
-    return 0
+    return 1 if fails else 0
 
 
 if __name__ == "__main__":

@@ -1,30 +1,99 @@
 name: 'sbom-diff'
-description: 'Diff two SBOMs and post the result as a PR comment'
+description: >-
+  Diff the dependency tree a pull request produces against the one on its base
+  branch, and comment what actually changed — including the transitive
+  additions nobody sees in the diff.
 author: 'Fabio Cicerchia'
 branding:
   icon: 'file-text'
   color: 'blue'
 
 inputs:
-  old-sbom:
-    description: 'Path to the previous SBOM (CycloneDX or SPDX JSON)'
-    required: true
-  new-sbom:
-    description: 'Path to the current SBOM'
-    required: true
+  scan-path:
+    description: 'Path to scan. Ignored when base-sbom and head-sbom are supplied.'
+    required: false
+    default: '.'
+  base-ref:
+    description: >-
+      Ref to diff against. Defaults to the pull request base, then to the
+      default branch.
+    required: false
+    default: ''
+  base-sbom:
+    description: 'Pre-generated SBOM for the base side (CycloneDX or SPDX JSON). Skips generation.'
+    required: false
+    default: ''
+  head-sbom:
+    description: 'Pre-generated SBOM for the head side (CycloneDX or SPDX JSON). Skips generation.'
+    required: false
+    default: ''
+  syft-version:
+    description: 'Pinned syft version used when generating SBOMs.'
+    required: false
+    default: 'v1.18.1'
+  title:
+    description: 'Heading used in the comment and the job summary.'
+    required: false
+    default: 'SBOM diff'
+  github-token:
+    description: 'Token used to post/update the PR comment. Omit to only write the job summary.'
+    required: false
+    default: ${{ github.token }}
+  pr-number:
+    description: 'Pull request to comment on. Defaults to the one in the event payload.'
+    required: false
+    default: ''
+  skip-unchanged:
+    description: 'Skip the comment entirely when nothing changed.'
+    required: false
+    default: 'true'
   fail-on:
     description: 'Exit non-zero on: any change / major bumps / license changes'
     required: false
     default: ''
-  github-token:
-    description: 'Token used to post/update the PR comment'
+  max-added:
+    description: 'Fail if more than this many components are added. Unset means no limit.'
     required: false
-    default: ${{ github.token }}
+    default: ''
+  max-added-transitive:
+    description: 'Fail if more than this many transitive components are added.'
+    required: false
+    default: ''
+  fail-on-downgrade:
+    description: 'Fail when a component moves to a lower version.'
+    required: false
+    default: 'false'
+  fail-on-license-change:
+    description: 'Fail when an existing component changes license.'
+    required: false
+    default: 'false'
+  deny-licenses:
+    description: 'Comma or newline separated license IDs that must not appear on an added component.'
+    required: false
+    default: ''
 
 outputs:
   summary:
     description: 'One-line summary of the diff'
     value: ${{ steps.diff.outputs.summary }}
+  added:
+    description: 'Number of components added'
+    value: ${{ steps.diff.outputs.added }}
+  added-transitive:
+    description: 'Number of added components that are transitive'
+    value: ${{ steps.diff.outputs.added-transitive }}
+  removed:
+    description: 'Number of components removed'
+    value: ${{ steps.diff.outputs.removed }}
+  changed:
+    description: 'Number of components whose version changed'
+    value: ${{ steps.diff.outputs.changed }}
+  license-changed:
+    description: 'Number of components whose license changed'
+    value: ${{ steps.diff.outputs.license-changed }}
+  markdown:
+    description: 'The rendered report, JSON-encoded so it survives being an output'
+    value: ${{ steps.diff.outputs.markdown }}
 
 runs:
   using: 'composite'
@@ -36,7 +105,44 @@ runs:
 
     - name: Install sbom-diff
       shell: bash
-      run: pip install "${{ github.action_path }}"
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: pip install "$ACTION_PATH"
+
+    # Generating both sides is the whole point: the base SBOM is the half a
+    # `run:` step cannot get without this dance, and it is the half that makes
+    # the numbers mean anything.
+    - name: Generate SBOMs
+      if: inputs.base-sbom == '' || inputs.head-sbom == ''
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.scan-path }}
+        BASE_REF: ${{ inputs.base-ref }}
+        SYFT_VERSION: ${{ inputs.syft-version }}
+        PR_BASE: ${{ github.event.pull_request.base.ref }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        set -euo pipefail
+        work="$(mktemp -d)"
+        echo "SBOM_DIFF_WORK=$work" >> "$GITHUB_ENV"
+
+        curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+          | sh -s -- -b "$work/bin" "$SYFT_VERSION"
+
+        "$work/bin/syft" scan "dir:$SCAN_PATH" -o cyclonedx-json="$work/head.json" -q
+
+        base="${BASE_REF:-${PR_BASE:-$DEFAULT_BRANCH}}"
+        # A shallow clone has no base commit. Fetching it explicitly is cheaper
+        # than asking every caller for fetch-depth: 0 and quietly producing a
+        # meaningless diff when they forget.
+        git fetch --no-tags --depth=1 origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null \
+          || git fetch --no-tags origin "$base"
+        git worktree add --detach "$work/base" "origin/$base" >/dev/null
+
+        "$work/bin/syft" scan "dir:$work/base/$SCAN_PATH" -o cyclonedx-json="$work/base.json" -q
+        git worktree remove --force "$work/base"
+
+        echo "diffing against origin/$base"
 
     - name: Run sbom-diff
       id: diff
@@ -45,31 +151,70 @@ runs:
         # Passed through env vars, not interpolated into the script — these
         # are caller-supplied action inputs, and raw ${{ }} interpolation
         # into a run: block is a shell-injection vector.
-        OLD_SBOM: ${{ inputs.old-sbom }}
-        NEW_SBOM: ${{ inputs.new-sbom }}
+        BASE_SBOM: ${{ inputs.base-sbom }}
+        HEAD_SBOM: ${{ inputs.head-sbom }}
+        TITLE: ${{ inputs.title }}
         FAIL_ON: ${{ inputs.fail-on }}
+        MAX_ADDED: ${{ inputs.max-added }}
+        MAX_ADDED_TRANSITIVE: ${{ inputs.max-added-transitive }}
+        FAIL_ON_DOWNGRADE: ${{ inputs.fail-on-downgrade }}
+        FAIL_ON_LICENSE_CHANGE: ${{ inputs.fail-on-license-change }}
+        DENY_LICENSES: ${{ inputs.deny-licenses }}
       run: |
         set +e
-        args=("$OLD_SBOM" "$NEW_SBOM")
-        if [ -n "$FAIL_ON" ]; then
-          args+=(--fail-on "$FAIL_ON")
-        fi
-        sbom-diff "${args[@]}" | tee sbom-diff-output.md
-        exit_code="${PIPESTATUS[0]}"
-        summary="$(sed -n '3p' sbom-diff-output.md)"
+        base="${BASE_SBOM:-$SBOM_DIFF_WORK/base.json}"
+        head="${HEAD_SBOM:-$SBOM_DIFF_WORK/head.json}"
+
+        args=("$base" "$head" --json)
+        [ -n "$FAIL_ON" ] && args+=(--fail-on "$FAIL_ON")
+        [ -n "$MAX_ADDED" ] && args+=(--max-added "$MAX_ADDED")
+        [ -n "$MAX_ADDED_TRANSITIVE" ] && args+=(--max-added-transitive "$MAX_ADDED_TRANSITIVE")
+        [ "$FAIL_ON_DOWNGRADE" = "true" ] && args+=(--fail-on-downgrade)
+        [ "$FAIL_ON_LICENSE_CHANGE" = "true" ] && args+=(--fail-on-license-change)
+        [ -n "$DENY_LICENSES" ] && args+=(--deny-licenses "$DENY_LICENSES")
+
+        sbom-diff "${args[@]}" > sbom-diff-result.json
+        echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+        # The report is rendered with the caller's title, then kept as a file
+        # for the comment and JSON-encoded for the output — a raw multi-line
+        # markdown body is not a legal step output.
+        jq -r --arg t "$TITLE" '.markdown | sub("^# SBOM diff"; "# " + $t)' \
+          sbom-diff-result.json > sbom-diff-output.md
+
         {
-          echo "summary=$summary"
-          echo "exit_code=$exit_code"
+          echo "summary=$(jq -r .summary sbom-diff-result.json)"
+          echo "added=$(jq -r .counts.added sbom-diff-result.json)"
+          echo "added-transitive=$(jq -r .counts.added_transitive sbom-diff-result.json)"
+          echo "removed=$(jq -r .counts.removed sbom-diff-result.json)"
+          echo "changed=$(jq -r .counts.changed sbom-diff-result.json)"
+          echo "license-changed=$(jq -r .counts.license_changed sbom-diff-result.json)"
+          echo "markdown=$(jq -Rs . < sbom-diff-output.md)"
+          echo "unchanged=$(jq -r '[.counts.added, .counts.removed, .counts.changed] | add == 0' \
+            sbom-diff-result.json)"
         } >> "$GITHUB_OUTPUT"
 
+    # Free, and it survives the case the comment cannot: a fork PR whose token
+    # has no write access to the base repo.
+    - name: Job summary
+      shell: bash
+      run: cat sbom-diff-output.md >> "$GITHUB_STEP_SUMMARY"
+
     - name: Post PR comment
-      if: github.event_name == 'pull_request'
+      if: >-
+        github.event_name == 'pull_request' && inputs.github-token != ''
+        && !(inputs.skip-unchanged == 'true' && steps.diff.outputs.unchanged == 'true')
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        # One comment per PR, edited in place. A new comment on every push turns
+        # a 12-commit branch into 12 identical walls of text and people stop
+        # reading them.
+        PR_NUMBER: ${{ inputs.pr-number || github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
       run: |
-        gh pr comment "${{ github.event.pull_request.number }}" \
-          --repo "${{ github.repository }}" \
+        gh pr comment "$PR_NUMBER" \
+          --repo "$REPO" \
           --edit-last --create-if-none \
           --body-file sbom-diff-output.md
 
