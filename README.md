@@ -34,9 +34,26 @@ $ sbom-diff old.json new.json
 - Reads CycloneDX **and** SPDX JSON, no config.
 - Groups changes by severity: major jumps first, then license changes,
   then minor/patch and added/removed.
-- Markdown for PRs (`--json` for machines).
-- CI gate: `--fail-on {any,major,license}` sets the exit code.
+- Separates **direct from transitive** additions — the count nobody sees in a
+  pull request diff and everybody cares about once it is shown to them.
+- Flags **downgrades**, which read as ordinary changes otherwise (2.0.0 →
+  1.9.0 is classified "major" like any upgrade).
+- Rename-aware: matches on purl identity, so a package that changes its
+  reported name is one rename, not an add plus a remove.
+- Diffs embedded VEX vulnerability data when the SBOM carries it.
+- Markdown for PRs (`--json` for machines, carrying both counts and the
+  rendered report).
+- CI gates, all opt-in: `--fail-on {any,major,license}`, `--max-added`,
+  `--max-added-transitive`, `--fail-on-downgrade`, `--fail-on-license-change`,
+  `--deny-licenses`.
 - Zero runtime dependencies (stdlib only).
+
+> [!NOTE]
+> Direct-vs-transitive is read from the SBOM's dependency graph
+> (CycloneDX `dependencies`, SPDX `relationships`). A document without one
+> reports every component as transitive — claiming a dependency is direct
+> without evidence would be worse than not saying. Bear that in mind before
+> gating on `--max-added-transitive`.
 
 ## Install
 
@@ -60,7 +77,28 @@ syft -o cyclonedx-json myapp:1.1 > new.json
 sbom-diff old.json new.json                # human/markdown
 sbom-diff old.json new.json --json         # machine-readable
 sbom-diff old.json new.json --fail-on license   # CI gate: any | major | license
+
+# Threshold gates, all opt-in and combinable
+sbom-diff old.json new.json --max-added-transitive 5 --fail-on-downgrade
+sbom-diff old.json new.json --deny-licenses 'AGPL-3.0,GPL-3.0'
 ```
+
+### As a GitHub Action
+
+Point it at a directory and it generates both SBOMs itself — the base side is
+the half a `run:` step cannot get on its own, and it is the half that makes the
+numbers mean anything.
+
+```yaml
+- uses: fabiocicerchia/sbom-diff@v1
+  with:
+    scan-path: .
+    max-added-transitive: 10
+    fail-on-downgrade: 'true'
+```
+
+See [`examples/github-action/`](examples/github-action/) for the full input and
+output list.
 
 Pairs with `fabiocicerchia/security-scanner-toolbox` (syft included) for a
 scan-and-diff release step. See [`examples/basic/`](examples/basic/) for a
