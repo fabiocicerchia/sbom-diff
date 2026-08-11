@@ -1,8 +1,7 @@
 name: 'sbom-diff'
 description: >-
   Diff the dependency tree a pull request produces against the one on its base
-  branch, and comment what actually changed — including the transitive
-  additions nobody sees in the diff.
+  branch, and comment what actually changed.
 author: 'Fabio Cicerchia'
 branding:
   icon: 'file-text'
