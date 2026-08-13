@@ -3,7 +3,7 @@
 #   docker run --rm -v "$PWD:/work" -w /work sbom-diff old.json new.json
 # ponytail: single-stage on purpose; switch to multi-stage only if native
 # build deps ever get added.
-FROM python:3.12-alpine
+FROM python:3.12-alpine@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df
 
 WORKDIR /app
 COPY . .
