@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.0...v1.0.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* security and code-quality findings ([#30](https://github.com/fabiocicerchia/sbom-diff/issues/30)) ([643eec7](https://github.com/fabiocicerchia/sbom-diff/commit/643eec72f2ac34a00bd0c8609019d122bf3c3093))
+
 ## [1.0.0](https://github.com/fabiocicerchia/sbom-diff/compare/v0.1.1...v1.0.0) (2026-08-10)
 
 
