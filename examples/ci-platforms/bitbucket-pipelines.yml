@@ -1,0 +1,31 @@
+# Bitbucket Pipelines — SBOM diff on every pull request.
+# Copy into bitbucket-pipelines.yml at the repo root.
+image: python:3.13-slim
+
+definitions:
+  steps:
+    - step: &sbom-diff
+        name: SBOM diff
+        clone:
+          depth: full # the destination commit has to be reachable
+        script:
+          - apt-get update && apt-get install -y --no-install-recommends curl git
+          - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+          - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.18.1
+          - syft -q -o cyclonedx-json=head.json dir:.
+          # BITBUCKET_PR_DESTINATION_BRANCH is the branch the PR merges into.
+          - git fetch --no-tags origin "$BITBUCKET_PR_DESTINATION_BRANCH"
+          - git worktree add /tmp/base "origin/$BITBUCKET_PR_DESTINATION_BRANCH"
+          - syft -q -o cyclonedx-json=base.json dir:/tmp/base
+          - set -o pipefail # the gate's exit code has to survive the pipe
+          # Every gate is opt-in — drop the flags to report without failing.
+          - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md
+        artifacts:
+          - sbom-diff.md
+          - base.json
+          - head.json
+
+pipelines:
+  pull-requests:
+    "**":
+      - step: *sbom-diff

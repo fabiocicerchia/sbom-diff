@@ -1,0 +1,50 @@
+# GitLab CI — SBOM diff on every merge request, posted as an MR note.
+# Copy into .gitlab-ci.yml (or `include:` it from one).
+stages:
+  - check
+
+sbom-diff:
+  stage: check
+  image: python:3.13-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    SYFT_VERSION: v1.18.1
+    # Fetch enough history to check out the base commit, not just the tip.
+    GIT_DEPTH: "0"
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends curl git
+      && rm -rf /var/lib/apt/lists/*
+    - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+    - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
+      | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+  script:
+    # Head side: the merge request's code, as checked out.
+    - syft -q -o cyclonedx-json dir:. > head.json
+    # Base side: the same scan against the commit the MR is based on. This is
+    # the half a one-off scan cannot get, and the half that makes the numbers
+    # mean anything.
+    - git worktree add /tmp/base "$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+    - syft -q -o cyclonedx-json dir:/tmp/base > base.json
+    # pipefail so the gate's exit code survives the pipe into tee.
+    - set -o pipefail
+    # Every gate is opt-in — drop the flags to report without ever failing.
+    - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md
+  after_script:
+    # Post the report as an MR note. Needs a project access token with `api`
+    # in the GITLAB_TOKEN CI/CD variable — $CI_JOB_TOKEN cannot write notes.
+    - |
+      if [ -n "${GITLAB_TOKEN:-}" ] && [ -s sbom-diff.md ]; then
+        curl -sS --fail-with-body \
+          -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "$(python3 -c 'import json,sys;print(json.dumps({"body":open("sbom-diff.md").read()}))')" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" >/dev/null
+      fi
+  artifacts:
+    when: always
+    paths:
+      - sbom-diff.md
+      - base.json
+      - head.json
+    expire_in: 1 week

@@ -1,0 +1,32 @@
+# Travis CI — SBOM diff between a pull request and its target branch.
+# Copy into .travis.yml.
+language: python
+python: "3.13"
+os: linux
+dist: jammy
+
+# The default clone is shallow; the base commit has to be reachable.
+git:
+  depth: false
+
+env:
+  global:
+    - SYFT_VERSION=v1.18.1
+
+install:
+  - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+  - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
+    | sh -s -- -b "$HOME/bin" "$SYFT_VERSION"
+  - export PATH="$HOME/bin:$PATH"
+
+script:
+  # On a pull request TRAVIS_BRANCH is the *target* branch — the base side.
+  # On a push build it is the branch itself, so diff against its merge base.
+  - BASE_REF="${TRAVIS_PULL_REQUEST_SHA:+origin/$TRAVIS_BRANCH}"
+  - BASE_REF="${BASE_REF:-HEAD~1}"
+  - syft -q -o cyclonedx-json dir:. > head.json
+  - git worktree add /tmp/base "$BASE_REF"
+  - syft -q -o cyclonedx-json dir:/tmp/base > base.json
+  - set -o pipefail # the gate's exit code has to survive the pipe into tee
+  # Every gate is opt-in — drop the flags to report without ever failing.
+  - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md

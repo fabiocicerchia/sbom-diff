@@ -1,0 +1,81 @@
+# Argo Workflows — SBOM diff as a release gate.
+# argo submit argo-workflow.yaml, or keep it as a WorkflowTemplate and call it
+# from a release workflow with `templateRef`. The DAG is the gate: `deploy`
+# depends on `diff`, so a failed diff leaves it unrun.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sbom-diff-
+spec:
+  entrypoint: release
+  arguments:
+    parameters:
+      - name: deployed-image
+        value: registry.example.com/myapp:production
+      - name: candidate-image
+        value: registry.example.com/myapp:release-candidate
+  volumeClaimTemplates:
+    - metadata:
+        name: reports
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 1Gi
+  templates:
+    - name: release
+      dag:
+        tasks:
+          - name: sbom-deployed
+            template: syft
+            arguments:
+              parameters:
+                - {name: image, value: "{{workflow.parameters.deployed-image}}"}
+                - {name: out, value: /reports/base.json}
+          - name: sbom-candidate
+            template: syft
+            arguments:
+              parameters:
+                - {name: image, value: "{{workflow.parameters.candidate-image}}"}
+                - {name: out, value: /reports/head.json}
+          - name: diff
+            template: diff
+            dependencies: [sbom-deployed, sbom-candidate]
+          - name: deploy
+            template: deploy
+            dependencies: [diff] # only runs if the diff passed its gates
+
+    - name: syft
+      inputs:
+        parameters:
+          - name: image
+          - name: out
+      container:
+        image: anchore/syft:v1.18.1
+        args: ["-q", "-o", "cyclonedx-json={{inputs.parameters.out}}", "{{inputs.parameters.image}}"]
+        volumeMounts:
+          - {name: reports, mountPath: /reports}
+        resources:
+          requests: {cpu: 200m, memory: 512Mi}
+          limits: {cpu: 500m, memory: 1Gi}
+
+    - name: diff
+      container:
+        image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+        # Every gate is opt-in — drop the flags to report without ever failing.
+        args: ["/reports/base.json", "/reports/head.json", "--fail-on", "major",
+               "--max-added-transitive", "10"]
+        volumeMounts:
+          - {name: reports, mountPath: /reports}
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: 200m, memory: 256Mi}
+
+    - name: deploy
+      container:
+        image: bitnami/kubectl:1.31
+        command: [sh, -c]
+        args: ["echo 'kubectl apply -f ... here'"]
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: 200m, memory: 256Mi}
