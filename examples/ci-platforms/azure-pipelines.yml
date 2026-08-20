@@ -1,0 +1,47 @@
+# Azure Pipelines — SBOM diff on every pull request.
+# Copy into azure-pipelines.yml.
+trigger: none
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  SYFT_VERSION: v1.18.1
+
+steps:
+  - checkout: self
+    fetchDepth: 0 # the base commit has to be reachable
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.13"
+
+  - script: |
+      set -euo pipefail
+      pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+      curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+        | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+    displayName: Install sbom-diff and syft
+
+  - script: |
+      set -euo pipefail
+      syft -q -o cyclonedx-json dir:. > head.json
+      # System.PullRequest.TargetBranch is a full ref (refs/heads/main).
+      BASE="$(System.PullRequest.TargetBranch)"
+      git fetch --no-tags origin "${BASE#refs/heads/}"
+      git worktree add /tmp/base "origin/${BASE#refs/heads/}"
+      syft -q -o cyclonedx-json dir:/tmp/base > base.json
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      # `set -o pipefail` above keeps the gate's exit code through the pipe.
+      sbom-diff base.json head.json --fail-on major --max-added-transitive 10 \
+        | tee "$(Build.ArtifactStagingDirectory)/sbom-diff.md"
+    displayName: SBOM diff
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)
+      artifact: sbom-diff

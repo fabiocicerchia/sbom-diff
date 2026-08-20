@@ -1,0 +1,56 @@
+# Tekton — SBOM diff between the live image and the release candidate.
+# kubectl apply -f tekton.yaml, then run the Task from a Pipeline ahead of
+# whatever deploys. A failed TaskRun fails the PipelineRun.
+#
+# Both tools ship as images with the right entrypoint, so no step needs a
+# shell: syft writes each SBOM straight to a file, sbom-diff reads the pair.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: sbom-diff
+spec:
+  description: >-
+    Diffs two SBOMs and explains the dependency changes in plain language —
+    major-version jumps first, license changes flagged.
+  params:
+    - name: deployed-image
+      description: The image currently live (the base side)
+      type: string
+    - name: candidate-image
+      description: The image about to ship (the head side)
+      type: string
+    - name: fail-on
+      description: any / major / license — omit to report without failing
+      type: string
+      default: major
+  workspaces:
+    - name: reports
+      description: Where the SBOMs and the rendered report are written
+  steps:
+    - name: sbom-deployed
+      image: anchore/syft:v1.18.1
+      args:
+        ["-q", "-o", "cyclonedx-json=$(workspaces.reports.path)/base.json",
+         "$(params.deployed-image)"]
+      computeResources:
+        requests: {cpu: 200m, memory: 512Mi}
+        limits: {cpu: 500m, memory: 1Gi}
+
+    - name: sbom-candidate
+      image: anchore/syft:v1.18.1
+      args:
+        ["-q", "-o", "cyclonedx-json=$(workspaces.reports.path)/head.json",
+         "$(params.candidate-image)"]
+      computeResources:
+        requests: {cpu: 200m, memory: 512Mi}
+        limits: {cpu: 500m, memory: 1Gi}
+
+    - name: diff
+      image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+      args:
+        ["$(workspaces.reports.path)/base.json",
+         "$(workspaces.reports.path)/head.json",
+         "--fail-on", "$(params.fail-on)"]
+      computeResources:
+        requests: {cpu: 100m, memory: 128Mi}
+        limits: {cpu: 200m, memory: 256Mi}

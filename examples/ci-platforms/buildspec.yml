@@ -1,0 +1,40 @@
+# AWS CodePipeline / CodeBuild — SBOM diff between the deployed image and the
+# candidate, as a stage of its own ahead of Deploy.
+# Copy into buildspec.yml (or point the CodeBuild project at this path).
+version: 0.2
+
+env:
+  variables:
+    SYFT_VERSION: v1.18.1
+    # The image the pipeline is about to ship, and the one currently live.
+    IMAGE_REPO: "123456789012.dkr.ecr.eu-north-1.amazonaws.com/myapp"
+    CANDIDATE_TAG: "$CODEBUILD_RESOLVED_SOURCE_VERSION"
+    DEPLOYED_TAG: "production"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+    commands:
+      - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+      - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
+        | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+  pre_build:
+    commands:
+      - aws ecr get-login-password | docker login --username AWS --password-stdin "${IMAGE_REPO%%/*}"
+      - syft -q -o cyclonedx-json "registry:$IMAGE_REPO:$DEPLOYED_TAG" > base.json
+      - syft -q -o cyclonedx-json "registry:$IMAGE_REPO:$CANDIDATE_TAG" > head.json
+  build:
+    commands:
+      - set -o pipefail
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      # A non-zero exit fails the build action, the stage, and the pipeline,
+      # so the release never reaches Deploy.
+      - sbom-diff base.json head.json --fail-on major --deny-licenses 'AGPL-3.0,GPL-3.0'
+        | tee sbom-diff.md
+
+artifacts:
+  files:
+    - sbom-diff.md
+    - base.json
+    - head.json

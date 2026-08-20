@@ -1,0 +1,32 @@
+# Buildkite — SBOM diff between the branch and its base, annotated on the build.
+# Copy into .buildkite/pipeline.yml.
+#
+# Buildkite interpolates `$VAR` when the pipeline is *uploaded*. Anything that
+# has to be expanded by the shell at *run* time is written `$$VAR` — hence the
+# doubled dollars below.
+steps:
+  - label: ":package: sbom diff"
+    key: sbom-diff
+    plugins:
+      - docker#v5.11.0:
+          image: python:3.13-slim
+          propagate-environment: true
+    command:
+      - apt-get update && apt-get install -y --no-install-recommends curl git
+      - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+      - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.18.1
+      - syft -q -o cyclonedx-json=head.json dir:.
+      # BUILDKITE_PULL_REQUEST_BASE_BRANCH is set on pull-request builds only.
+      - BASE="$${BUILDKITE_PULL_REQUEST_BASE_BRANCH:-main}"
+      - git fetch --no-tags origin "$$BASE"
+      - git worktree add /tmp/base "origin/$$BASE"
+      - syft -q -o cyclonedx-json=base.json dir:/tmp/base
+      - set -o pipefail # the gate's exit code has to survive the pipe
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md
+      # The report is already markdown, so it renders as-is.
+      - buildkite-agent annotate --style info --context sbom-diff < sbom-diff.md
+    artifact_paths:
+      - sbom-diff.md
+      - base.json
+      - head.json

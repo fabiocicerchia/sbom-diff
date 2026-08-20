@@ -1,0 +1,53 @@
+# Drone — SBOM diff between a pull request and its target branch.
+# Copy into .drone.yml at the repo root.
+#
+# Woodpecker CI runs the same steps: drop the `kind`/`type`/`name` header, keep
+# `steps:` as-is, and save it as .woodpecker.yml.
+#
+# Steps share the workspace volume and nothing else, so every path here is
+# workspace-relative. The head scan runs before the base worktree exists, so it
+# never sees `.base/` in its own tree.
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: sbom-head
+    image: anchore/syft:v1.18.1
+    # No `commands:`, so the image's own entrypoint runs — syft writes its
+    # output to a file itself, which is why no step here needs a shell.
+    command:
+      - -q
+      - -o
+      - cyclonedx-json=head.json
+      - "dir:."
+
+  - name: checkout-base
+    image: alpine/git:2.45.2
+    commands:
+      # The default clone is shallow; the target branch has to be reachable.
+      - git fetch --no-tags origin "$DRONE_TARGET_BRANCH"
+      - git worktree add .base "origin/$DRONE_TARGET_BRANCH"
+
+  - name: sbom-base
+    image: anchore/syft:v1.18.1
+    command:
+      - -q
+      - -o
+      - cyclonedx-json=base.json
+      - "dir:.base"
+
+  - name: diff
+    image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+    # Every gate is opt-in — drop the flags to report without ever failing.
+    command:
+      - base.json
+      - head.json
+      - --fail-on
+      - major
+      - --max-added-transitive
+      - "10"
+
+trigger:
+  event:
+    - pull_request
