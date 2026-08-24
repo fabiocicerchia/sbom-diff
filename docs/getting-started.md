@@ -38,16 +38,16 @@ Python 3.10+, takes two SBOM files, prints markdown, and exits `1` when an
 opt-in gate trips — which is all a gate needs anywhere:
 
 ```sh
-pip install "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
 syft -q -o cyclonedx-json=head.json dir:.
 git worktree add /tmp/base "$BASE_REF"      # the half a one-off scan can't get
 syft -q -o cyclonedx-json=base.json dir:/tmp/base
-sbom-diff base.json head.json --fail-on major --max-added-transitive 10
+docker run --rm -v "$PWD:/work" -w /work ghcr.io/fabiocicerchia/sbom-diff:1.0.1 \
+  base.json head.json --fail-on major --max-added-transitive 10
 ```
 
-There is also an image whose entrypoint is the CLI,
-`ghcr.io/fabiocicerchia/sbom-diff:1.0.1`, for platforms that would rather run a
-container than install anything.
+The image's entrypoint is the CLI, so the SBOMs are just arguments. Every
+example in `examples/ci-platforms/` pulls it rather than installing from
+source; `pipx install` remains the right answer on a workstation.
 
 Drop-in files for GitLab CI, CircleCI, Travis, Azure DevOps, AWS CodePipeline,
 Devtron, Northflank, Spacelift, Jenkins, Bitbucket Pipelines, Google Cloud

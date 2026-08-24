@@ -8,16 +8,27 @@ stdlib-only Python 3.10+, takes two SBOM files, prints markdown, and exits `1`
 when an opt-in gate trips. Every file here is that same shape:
 
 ```sh
-pip install "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
 syft -q -o cyclonedx-json=head.json dir:.
 syft -q -o cyclonedx-json=base.json dir:/tmp/base
-sbom-diff base.json head.json --fail-on major --max-added-transitive 10
+docker run --rm -v "$PWD:/work" -w /work ghcr.io/fabiocicerchia/sbom-diff:1.0.1 \
+  base.json head.json --fail-on major --max-added-transitive 10
 ```
 
-Pin the tag (`v1.0.1` above), not `main` — a gate that changes underneath you
-fails builds you didn't change. There's also an image with the CLI already in
-it, `ghcr.io/fabiocicerchia/sbom-diff:1.0.1`, whose entrypoint *is* `sbom-diff`;
-the container-native files use it and pass arguments directly.
+Every file here uses the **published image**, `ghcr.io/fabiocicerchia/sbom-diff`,
+rather than installing from source — nothing clones this repository or
+pip-installs it at run time. Its entrypoint *is* `sbom-diff`, so on the
+container-native platforms the step is nothing but arguments. Pin the tag
+(`1.0.1` above), not `latest`.
+
+syft is a third-party scanner with its own release artifacts, so it comes from
+`anchore/syft` where the platform runs images with arguments, and from its
+one-line installer where the job needs a shell.
+
+> [!NOTE]
+> The image is published by the release pipeline, so a tag exists only once
+> that release has run. If a pinned tag 404s, either publish it — the **Publish
+> Image** workflow takes a tag via `workflow_dispatch` — or pin to the newest
+> tag the registry actually has.
 
 ## Files
 
@@ -115,39 +126,53 @@ prose: it carries both the totals and the rendered markdown.
 
 ## Platform notes
 
-**GitLab CI** — `set -o pipefail` before the gate, or `tee` swallows the exit
-code and nothing ever fails.
+**GitLab CI** — the job image is the sbom-diff image with its entrypoint
+cleared (`entrypoint: [""]`) and run as root, so `apk add git` works. And
+`set -o pipefail` before the gate, or `tee` swallows the exit code and nothing
+ever fails.
 
 **CircleCI** — exposes no base ref of its own; `BASE_BRANCH` is set explicitly.
 
-**Travis CI** — `TRAVIS_BRANCH` means the target branch on a PR build and the
-branch itself on a push build; the file handles both.
+**Travis CI** — runs jobs on a VM rather than an image you pick, so both images
+are pulled and run instead. `TRAVIS_BRANCH` means the target branch on a PR
+build and the branch itself on a push build; the file handles both. The head
+scan excludes `./.base/**`, since the base worktree lives inside the checkout.
 
-**Azure DevOps** — `pr:` triggers only fire for Azure Repos. For a GitHub repo,
-build validation is configured on the branch policy instead.
+**Azure DevOps** — the images are run with `docker run` rather than as a
+`container:` job, so the tasks keep the Node runtime container jobs require.
+`pr:` triggers only fire for Azure Repos; for a GitHub repo, build validation
+is configured on the branch policy instead.
 
-**AWS CodePipeline** — a CodeBuild action in its own stage ahead of Deploy.
-Scanning images from ECR needs `ecr:GetAuthorizationToken` and pull permissions
-on the CodeBuild service role.
+**AWS CodePipeline** — a CodeBuild action in its own stage ahead of Deploy,
+with the project's **privileged mode** on so `docker run` works. Scanning
+images from ECR needs `ecr:GetAuthorizationToken` and pull permissions on the
+CodeBuild service role, and syft reads them through the mounted Docker socket.
 
-**Devtron** — Pre-Deployment, so a release pulling in a major bump or a denied
-license never deploys. Devtron already knows the image tag it built; wire it to
-the task's Input Variables rather than restating it.
+**Devtron** — three Container-image tasks need no script at all, since both
+images already have the right entrypoint; the shell script in this folder is
+the fallback for a node with Docker but no per-task image. Pre-Deployment, so a
+release pulling in a major bump or a denied license never deploys. Devtron
+already knows the image tag it built; wire it to the task's Input Variables
+rather than restating it.
 
-**Northflank** — a manual job, run as a step in the environment's release
-workflow ahead of the deploy step. A failed step stops the rest of the workflow.
-The one-line `customCommand` installs both tools at run time; if you run this
-often, bake an image with syft and sbom-diff already in it and the command
-becomes a single `sbom-diff` call.
+**Northflank** — a manual job on the sbom-diff image, run as a step in the
+environment's release workflow ahead of the deploy step. A failed step stops the
+rest of the workflow. Only syft is fetched at run time (to `/tmp`, since the
+image's uid cannot write elsewhere); bake it into an image if this runs often.
 
 **Spacelift** — `before_apply`, the phase where the plan has resolved which
-image is about to go live and nothing has been created yet.
+image is about to go live and nothing has been created yet. The one platform
+here where the published image cannot be the job image: hooks run inside the
+stack's *runner* image, which already carries the IaC tooling, so both tools are
+layered into a runner image built once (the file shows the Dockerfile).
 
 **Jenkins** — `agent { docker { … } }` needs the Docker Pipeline plugin. The
-`-u root` arg is only there so the syft installer can write to `/usr/local/bin`.
+`--entrypoint=` arg clears the image's CLI entrypoint so Jenkins can run a
+shell, and `-u root` lets `apk add` and the syft installer write.
 
-**Bitbucket Pipelines** — `clone: {depth: full}` matters: the default shallow
-clone cannot reach the destination branch.
+**Bitbucket Pipelines** — `run-as-user: 0` so `apk add` works, and
+`clone: {depth: full}` matters: the default shallow clone cannot reach the
+destination branch.
 
 **Google Cloud Build** — both tools ship as images with the right entrypoint, so
 no step needs a shell: syft writes each SBOM to a file, sbom-diff reads the pair.
