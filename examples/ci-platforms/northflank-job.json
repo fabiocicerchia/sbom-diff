@@ -6,11 +6,11 @@
   },
   "deployment": {
     "external": {
-      "imagePath": "python:3.13-alpine"
+      "imagePath": "ghcr.io/fabiocicerchia/sbom-diff:1.0.1"
     },
     "docker": {
       "configType": "customCommand",
-      "customCommand": "sh -c 'apk add --no-cache curl >/dev/null && curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.18.1 >/dev/null && pip install --quiet git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1 && syft -q -o cyclonedx-json=/tmp/base.json registry:$IMAGE_REPO:$DEPLOYED_TAG && syft -q -o cyclonedx-json=/tmp/head.json registry:$IMAGE_REPO:$CANDIDATE_TAG && sbom-diff /tmp/base.json /tmp/head.json --fail-on major --max-added-transitive 10'"
+      "customCommand": "sh -c 'wget -qO- https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /tmp/bin v1.18.1 >/dev/null && /tmp/bin/syft -q -o cyclonedx-json=/tmp/base.json registry:$IMAGE_REPO:$DEPLOYED_TAG && /tmp/bin/syft -q -o cyclonedx-json=/tmp/head.json registry:$IMAGE_REPO:$CANDIDATE_TAG && sbom-diff /tmp/base.json /tmp/head.json --fail-on major --max-added-transitive 10'"
     }
   },
   "settings": {

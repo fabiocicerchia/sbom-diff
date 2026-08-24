@@ -1,31 +1,39 @@
-#!/bin/sh
+# shellcheck shell=sh
 # Devtron — SBOM diff between the running image and the one about to deploy.
 #
-# Paste into a task of type "Execute custom script" / Shell on the
-# Pre-Deployment stage (App -> Workflow -> Pre-Deployment stage -> Add task),
-# or on Post-Build if you want it at CI time instead. A non-zero exit fails the
-# stage, so a release that pulls in a major bump or a denied license never
-# deploys.
+# Not a standalone script: it is the body of a Devtron task, and Devtron
+# supplies the interpreter — hence the shellcheck directive instead of a
+# shebang.
 #
-# Declare IMAGE_REPO / CANDIDATE_TAG / DEPLOYED_TAG as Input Variables on the
-# task — Devtron already knows the image it built, so wire the candidate tag to
-# it rather than restating it here.
+# The neater setup is two tasks of type "Container image", which need no script
+# at all because both images already have the right entrypoint:
+#
+#   1. anchore/syft:v1.18.1                       -> args: -q -o cyclonedx-json=/work/base.json <repo>:<deployed>
+#   2. anchore/syft:v1.18.1                       -> args: -q -o cyclonedx-json=/work/head.json <repo>:<candidate>
+#   3. ghcr.io/fabiocicerchia/sbom-diff:1.0.1     -> args: /work/base.json /work/head.json --fail-on major
+#
+# This script is the Shell-task equivalent, for a node that has Docker but no
+# per-task image. Put it on Pre-Deployment to gate the release, or Post-Build
+# to gate at CI time; a non-zero exit fails the stage.
 set -eu
 
 IMAGE_REPO="${IMAGE_REPO:?set the image repository}"
 CANDIDATE_TAG="${CANDIDATE_TAG:?set the tag being deployed}"
 DEPLOYED_TAG="${DEPLOYED_TAG:-production}"
-SYFT_VERSION="${SYFT_VERSION:-v1.18.1}"
+SYFT_IMAGE="${SYFT_IMAGE:-anchore/syft:v1.18.1}"
+SBOM_DIFF_IMAGE="${SBOM_DIFF_IMAGE:-ghcr.io/fabiocicerchia/sbom-diff:1.0.1}"
+WORK="${WORK:-/tmp/sbom}"
 
-pip install --no-cache-dir --quiet "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-  | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+mkdir -p "$WORK"
 
-syft -q -o cyclonedx-json "registry:$IMAGE_REPO:$DEPLOYED_TAG" > /tmp/base.json
-syft -q -o cyclonedx-json "registry:$IMAGE_REPO:$CANDIDATE_TAG" > /tmp/head.json
+docker run --rm -v "$WORK:/work" "$SYFT_IMAGE" \
+  -q -o cyclonedx-json=/work/base.json "$IMAGE_REPO:$DEPLOYED_TAG"
+docker run --rm -v "$WORK:/work" "$SYFT_IMAGE" \
+  -q -o cyclonedx-json=/work/head.json "$IMAGE_REPO:$CANDIDATE_TAG"
 
 # Every gate is opt-in — drop the flags to report without ever failing.
-sbom-diff /tmp/base.json /tmp/head.json \
+docker run --rm -v "$WORK:/work" "$SBOM_DIFF_IMAGE" \
+  /work/base.json /work/head.json \
   --fail-on major \
   --max-added-transitive 10 \
   --fail-on-license-change

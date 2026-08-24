@@ -1,19 +1,23 @@
 # Buildkite — SBOM diff between the branch and its base, annotated on the build.
 # Copy into .buildkite/pipeline.yml.
 #
+# The published sbom-diff image is the step image, so the CLI is already on
+# PATH — nothing clones this repository. git and syft are added on top.
+#
 # Buildkite interpolates `$VAR` when the pipeline is *uploaded*. Anything that
-# has to be expanded by the shell at *run* time is written `$$VAR` — hence the
-# doubled dollars below.
+# has to be expanded by the shell at *run* time is written `$$VAR`.
 steps:
   - label: ":package: sbom diff"
     key: sbom-diff
     plugins:
       - docker#v5.11.0:
-          image: python:3.13-slim
+          image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+          # The image's entrypoint is the CLI; the plugin needs a shell.
+          entrypoint: /bin/sh
+          user: root
           propagate-environment: true
     command:
-      - apt-get update && apt-get install -y --no-install-recommends curl git
-      - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+      - apk add --no-cache git curl
       - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.18.1
       - syft -q -o cyclonedx-json=head.json dir:.
       # BUILDKITE_PULL_REQUEST_BASE_BRANCH is set on pull-request builds only.

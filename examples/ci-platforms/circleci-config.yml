@@ -1,31 +1,35 @@
 # CircleCI — SBOM diff between the branch and its base.
 # Copy into .circleci/config.yml.
+#
+# The job image is the published sbom-diff image; git and syft are added on top.
 version: 2.1
 
 jobs:
   sbom-diff:
     docker:
-      - image: cimg/python:3.13
+      - image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+        # The image's entrypoint is sbom-diff itself; steps need a shell.
+        entrypoint: ["/bin/sh"]
+        user: root
     environment:
       SYFT_VERSION: v1.18.1
       # CircleCI exposes no base ref of its own; name the branch you merge into.
       BASE_BRANCH: main
     steps:
-      - checkout
       - run:
-          name: Install sbom-diff and syft
+          name: Add git and syft
           command: |
-            pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+            apk add --no-cache git curl openssh-client
             curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-              | sh -s -- -b "$HOME/bin" "$SYFT_VERSION"
-            echo 'export PATH="$HOME/bin:$PATH"' >> "$BASH_ENV"
+              | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+      - checkout
       - run:
           name: Scan both sides
           command: |
-            syft -q -o cyclonedx-json dir:. > head.json
+            syft -q -o cyclonedx-json=head.json dir:.
             git fetch --no-tags origin "$BASE_BRANCH"
             git worktree add /tmp/base "origin/$BASE_BRANCH"
-            syft -q -o cyclonedx-json dir:/tmp/base > base.json
+            syft -q -o cyclonedx-json=base.json dir:/tmp/base
       - run:
           name: Diff
           command: |

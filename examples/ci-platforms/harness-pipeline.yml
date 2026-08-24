@@ -1,6 +1,9 @@
 # Harness — SBOM diff as a Run step in a CI stage.
 # Paste into the pipeline's YAML editor (Pipeline Studio -> YAML), or commit it
 # if the pipeline is stored in Git.
+#
+# The published sbom-diff image is the step image, so the CLI is already on
+# PATH — nothing clones this repository. git and syft are added on top.
 pipeline:
   name: sbom-diff
   identifier: sbom_diff
@@ -28,15 +31,14 @@ pipeline:
                   identifier: sbom_diff
                   spec:
                     shell: Sh
-                    image: python:3.13-slim
+                    image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
                     envVariables:
                       SYFT_VERSION: v1.18.1
                       # The branch the pull request merges into.
                       BASE_BRANCH: <+codebase.targetBranch>
                     command: |-
                       set -euo pipefail
-                      apt-get update && apt-get install -y --no-install-recommends curl git
-                      pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+                      apk add --no-cache git curl
                       curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
                         | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
                       syft -q -o cyclonedx-json=head.json dir:.

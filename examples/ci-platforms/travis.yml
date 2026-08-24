@@ -1,9 +1,16 @@
 # Travis CI — SBOM diff between a pull request and its target branch.
 # Copy into .travis.yml.
-language: python
-python: "3.13"
+#
+# Travis runs the job on a VM rather than an image you choose, so both published
+# images are used the other way round: pulled and run, rather than installed
+# into. Nothing clones this repository.
+language: minimal
 os: linux
 dist: jammy
+
+# The scalar form, not a list: `services:` with a list of names is what a
+# docker-compose file looks like to a linter.
+services: docker
 
 # The default clone is shallow; the base commit has to be reachable.
 git:
@@ -11,22 +18,24 @@ git:
 
 env:
   global:
-    - SYFT_VERSION=v1.18.1
+    - SYFT_IMAGE=anchore/syft:v1.18.1
+    - SBOM_DIFF_IMAGE=ghcr.io/fabiocicerchia/sbom-diff:1.0.1
 
 install:
-  - pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
-  - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
-    | sh -s -- -b "$HOME/bin" "$SYFT_VERSION"
-  - export PATH="$HOME/bin:$PATH"
+  - docker pull "$SYFT_IMAGE"
+  - docker pull "$SBOM_DIFF_IMAGE"
 
 script:
   # On a pull request TRAVIS_BRANCH is the *target* branch — the base side.
-  # On a push build it is the branch itself, so diff against its merge base.
+  # On a push build it is the branch itself, so diff against its parent.
   - BASE_REF="${TRAVIS_PULL_REQUEST_SHA:+origin/$TRAVIS_BRANCH}"
   - BASE_REF="${BASE_REF:-HEAD~1}"
-  - syft -q -o cyclonedx-json dir:. > head.json
-  - git worktree add /tmp/base "$BASE_REF"
-  - syft -q -o cyclonedx-json dir:/tmp/base > base.json
-  - set -o pipefail # the gate's exit code has to survive the pipe into tee
+  - git worktree add .base "$BASE_REF"
+  # Both images have the right entrypoint, so each call is just arguments.
+  - docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE"
+    -q --exclude './.base/**' -o cyclonedx-json=head.json dir:.
+  - docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE"
+    -q -o cyclonedx-json=base.json dir:.base
   # Every gate is opt-in — drop the flags to report without ever failing.
-  - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md
+  - docker run --rm -v "$PWD:/work" -w /work "$SBOM_DIFF_IMAGE"
+    base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md

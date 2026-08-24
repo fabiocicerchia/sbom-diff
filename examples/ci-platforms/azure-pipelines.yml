@@ -1,5 +1,10 @@
 # Azure Pipelines — SBOM diff on every pull request.
 # Copy into azure-pipelines.yml.
+#
+# Both published images are run with `docker run` rather than as a `container:`
+# job: Microsoft-hosted agents have Docker, and keeping the tasks on the host
+# means they still have the Node runtime that container jobs require. Nothing
+# clones this repository.
 trigger: none
 pr:
   branches:
@@ -9,34 +14,34 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  SYFT_VERSION: v1.18.1
+  SYFT_IMAGE: anchore/syft:v1.18.1
+  SBOM_DIFF_IMAGE: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
 
 steps:
   - checkout: self
     fetchDepth: 0 # the base commit has to be reachable
 
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: "3.13"
-
   - script: |
       set -euo pipefail
-      pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
-      curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-        | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
-    displayName: Install sbom-diff and syft
-
-  - script: |
-      set -euo pipefail
-      syft -q -o cyclonedx-json dir:. > head.json
       # System.PullRequest.TargetBranch is a full ref (refs/heads/main).
       BASE="$(System.PullRequest.TargetBranch)"
       git fetch --no-tags origin "${BASE#refs/heads/}"
-      git worktree add /tmp/base "origin/${BASE#refs/heads/}"
-      syft -q -o cyclonedx-json dir:/tmp/base > base.json
+      git worktree add .base "origin/${BASE#refs/heads/}"
+    displayName: Materialise the base commit
+
+  - script: |
+      set -euo pipefail
+      docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE" \
+        -q --exclude './.base/**' -o cyclonedx-json=head.json dir:.
+      docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE" \
+        -q -o cyclonedx-json=base.json dir:.base
+    displayName: Scan both sides
+
+  - script: |
+      set -euo pipefail
       # Every gate is opt-in — drop the flags to report without ever failing.
-      # `set -o pipefail` above keeps the gate's exit code through the pipe.
-      sbom-diff base.json head.json --fail-on major --max-added-transitive 10 \
+      docker run --rm -v "$PWD:/work" -w /work "$SBOM_DIFF_IMAGE" \
+        base.json head.json --fail-on major --max-added-transitive 10 \
         | tee "$(Build.ArtifactStagingDirectory)/sbom-diff.md"
     displayName: SBOM diff
 
