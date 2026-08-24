@@ -1,0 +1,46 @@
+# AWS CodePipeline / CodeBuild — SBOM diff between the deployed image and the
+# candidate, as a stage of its own ahead of Deploy.
+# Copy into buildspec.yml (or point the CodeBuild project at this path).
+#
+# Both published images are run with `docker run`, which keeps the AWS CLI from
+# the managed build image available for the ECR login. It needs the project's
+# privileged mode ON, which is how CodeBuild grants a build a Docker daemon.
+version: 0.2
+
+env:
+  variables:
+    SYFT_IMAGE: anchore/syft:v1.18.1
+    SBOM_DIFF_IMAGE: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+    # The image the pipeline is about to ship, and the one currently live.
+    IMAGE_REPO: "123456789012.dkr.ecr.eu-north-1.amazonaws.com/myapp"
+    CANDIDATE_TAG: "$CODEBUILD_RESOLVED_SOURCE_VERSION"
+    DEPLOYED_TAG: "production"
+
+phases:
+  install:
+    commands:
+      - docker pull "$SYFT_IMAGE"
+      - docker pull "$SBOM_DIFF_IMAGE"
+  pre_build:
+    commands:
+      - aws ecr get-login-password | docker login --username AWS --password-stdin "${IMAGE_REPO%%/*}"
+      # syft reads the daemon's images, so the socket is mounted in.
+      - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work
+        "$SYFT_IMAGE" -q -o cyclonedx-json=base.json "$IMAGE_REPO:$DEPLOYED_TAG"
+      - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work
+        "$SYFT_IMAGE" -q -o cyclonedx-json=head.json "$IMAGE_REPO:$CANDIDATE_TAG"
+  build:
+    commands:
+      - set -o pipefail
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      # A non-zero exit fails the build action, the stage, and the pipeline,
+      # so the release never reaches Deploy.
+      - docker run --rm -v "$PWD:/work" -w /work "$SBOM_DIFF_IMAGE"
+        base.json head.json --fail-on major --deny-licenses 'AGPL-3.0,GPL-3.0'
+        | tee sbom-diff.md
+
+artifacts:
+  files:
+    - sbom-diff.md
+    - base.json
+    - head.json

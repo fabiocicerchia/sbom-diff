@@ -1,0 +1,52 @@
+# Azure Pipelines — SBOM diff on every pull request.
+# Copy into azure-pipelines.yml.
+#
+# Both published images are run with `docker run` rather than as a `container:`
+# job: Microsoft-hosted agents have Docker, and keeping the tasks on the host
+# means they still have the Node runtime that container jobs require. Nothing
+# clones this repository.
+trigger: none
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  SYFT_IMAGE: anchore/syft:v1.18.1
+  SBOM_DIFF_IMAGE: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+
+steps:
+  - checkout: self
+    fetchDepth: 0 # the base commit has to be reachable
+
+  - script: |
+      set -euo pipefail
+      # System.PullRequest.TargetBranch is a full ref (refs/heads/main).
+      BASE="$(System.PullRequest.TargetBranch)"
+      git fetch --no-tags origin "${BASE#refs/heads/}"
+      git worktree add .base "origin/${BASE#refs/heads/}"
+    displayName: Materialise the base commit
+
+  - script: |
+      set -euo pipefail
+      docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE" \
+        -q --exclude './.base/**' -o cyclonedx-json=head.json dir:.
+      docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE" \
+        -q -o cyclonedx-json=base.json dir:.base
+    displayName: Scan both sides
+
+  - script: |
+      set -euo pipefail
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      docker run --rm -v "$PWD:/work" -w /work "$SBOM_DIFF_IMAGE" \
+        base.json head.json --fail-on major --max-added-transitive 10 \
+        | tee "$(Build.ArtifactStagingDirectory)/sbom-diff.md"
+    displayName: SBOM diff
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)
+      artifact: sbom-diff

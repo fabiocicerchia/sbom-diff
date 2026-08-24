@@ -1,0 +1,60 @@
+# GitLab CI — SBOM diff on every merge request, posted as an MR note.
+# Copy into .gitlab-ci.yml (or `include:` it from one).
+#
+# The job image is the published sbom-diff image, so the CLI is already on PATH
+# — nothing clones this repository or installs it. git and syft are added on
+# top: git because the base side needs a second worktree, syft because it is a
+# third-party scanner with its own one-line installer.
+stages:
+  - check
+
+sbom-diff:
+  stage: check
+  image:
+    name: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+    # The image's entrypoint *is* sbom-diff, so it has to be cleared for GitLab
+    # to run the script's shell in the container.
+    entrypoint: [""]
+    docker:
+      # apk needs root, and the image runs as uid 10001.
+      user: root
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    SYFT_VERSION: v1.18.1
+    # Fetch enough history to check out the base commit, not just the tip.
+    GIT_DEPTH: "0"
+  before_script:
+    - apk add --no-cache git curl
+    - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
+      | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+  script:
+    # Head side: the merge request's code, as checked out.
+    - syft -q -o cyclonedx-json=head.json dir:.
+    # Base side: the same scan against the commit the MR is based on. This is
+    # the half a one-off scan cannot get, and the half that makes the numbers
+    # mean anything.
+    - git worktree add /tmp/base "$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+    - syft -q -o cyclonedx-json=base.json dir:/tmp/base
+    # pipefail so the gate's exit code survives the pipe into tee.
+    - set -o pipefail
+    # Every gate is opt-in — drop the flags to report without ever failing.
+    - sbom-diff base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md
+  after_script:
+    # Post the report as an MR note. Needs a project access token with `api`
+    # in the GITLAB_TOKEN CI/CD variable — $CI_JOB_TOKEN cannot write notes.
+    - |
+      if [ -n "${GITLAB_TOKEN:-}" ] && [ -s sbom-diff.md ]; then
+        curl -sS --fail-with-body \
+          -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "$(python3 -c 'import json;print(json.dumps({"body":open("sbom-diff.md").read()}))')" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" >/dev/null
+      fi
+  artifacts:
+    when: always
+    paths:
+      - sbom-diff.md
+      - base.json
+      - head.json
+    expire_in: 1 week

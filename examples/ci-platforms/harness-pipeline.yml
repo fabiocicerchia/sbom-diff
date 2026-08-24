@@ -1,0 +1,56 @@
+# Harness — SBOM diff as a Run step in a CI stage.
+# Paste into the pipeline's YAML editor (Pipeline Studio -> YAML), or commit it
+# if the pipeline is stored in Git.
+#
+# The published sbom-diff image is the step image, so the CLI is already on
+# PATH — nothing clones this repository. git and syft are added on top.
+pipeline:
+  name: sbom-diff
+  identifier: sbom_diff
+  projectIdentifier: YOUR_PROJECT_ID
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: SBOM diff
+        identifier: SBOM_diff
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: SBOM diff
+                  identifier: sbom_diff
+                  spec:
+                    shell: Sh
+                    image: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+                    envVariables:
+                      SYFT_VERSION: v1.18.1
+                      # The branch the pull request merges into.
+                      BASE_BRANCH: <+codebase.targetBranch>
+                    command: |-
+                      set -euo pipefail
+                      apk add --no-cache git curl
+                      curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+                        | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+                      syft -q -o cyclonedx-json=head.json dir:.
+                      git fetch --no-tags origin "$BASE_BRANCH"
+                      git worktree add /tmp/base "origin/$BASE_BRANCH"
+                      syft -q -o cyclonedx-json=base.json dir:/tmp/base
+                      # Every gate is opt-in — drop the flags to report only.
+                      sbom-diff base.json head.json --fail-on major --max-added-transitive 10 \
+                        | tee sbom-diff.md
+  properties:
+    ci:
+      codebase:
+        connectorRef: YOUR_CODE_REPO_CONNECTOR_ID
+        repoName: YOUR_REPO_NAME
+        build: <+input>

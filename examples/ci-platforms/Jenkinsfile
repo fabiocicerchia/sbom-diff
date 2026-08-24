@@ -1,0 +1,56 @@
+// Jenkins — SBOM diff between a pull request and its target branch.
+// Copy into a Jenkinsfile at the repo root (Multibranch Pipeline picks it up).
+pipeline {
+  // The published sbom-diff image as the build container, so the CLI is
+  // already on PATH — nothing clones this repository. git and syft are added
+  // on top, which is why it runs as root.
+  agent {
+    docker {
+      image 'ghcr.io/fabiocicerchia/sbom-diff:1.0.1'
+      args '--entrypoint= -u root'
+    }
+  }
+
+  environment {
+    SYFT_VERSION = 'v1.18.1'
+  }
+
+  stages {
+    stage('Add git and syft') {
+      steps {
+        sh '''
+          set -eu
+          apk add --no-cache git curl
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+        '''
+      }
+    }
+
+    stage('SBOM diff') {
+      steps {
+        // CHANGE_TARGET is set on pull-request builds by the Multibranch plugin;
+        // on a branch build it is unset and the diff falls back to the previous
+        // commit.
+        sh '''
+          set -euo pipefail
+          BASE_REF="${CHANGE_TARGET:+origin/$CHANGE_TARGET}"
+          BASE_REF="${BASE_REF:-HEAD~1}"
+          git fetch --no-tags origin "${CHANGE_TARGET:-HEAD}" || true
+          syft -q -o cyclonedx-json=head.json dir:.
+          git worktree add /tmp/base "$BASE_REF"
+          syft -q -o cyclonedx-json=base.json dir:/tmp/base
+          # Every gate is opt-in — drop the flags to report without failing.
+          sbom-diff base.json head.json --fail-on major --max-added-transitive 10 \
+            | tee sbom-diff.md
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'sbom-diff.md,base.json,head.json', allowEmptyArchive: true
+    }
+  }
+}

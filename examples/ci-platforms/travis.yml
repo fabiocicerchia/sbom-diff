@@ -1,0 +1,41 @@
+# Travis CI — SBOM diff between a pull request and its target branch.
+# Copy into .travis.yml.
+#
+# Travis runs the job on a VM rather than an image you choose, so both published
+# images are used the other way round: pulled and run, rather than installed
+# into. Nothing clones this repository.
+language: minimal
+os: linux
+dist: jammy
+
+# The scalar form, not a list: `services:` with a list of names is what a
+# docker-compose file looks like to a linter.
+services: docker
+
+# The default clone is shallow; the base commit has to be reachable.
+git:
+  depth: false
+
+env:
+  global:
+    - SYFT_IMAGE=anchore/syft:v1.18.1
+    - SBOM_DIFF_IMAGE=ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+
+install:
+  - docker pull "$SYFT_IMAGE"
+  - docker pull "$SBOM_DIFF_IMAGE"
+
+script:
+  # On a pull request TRAVIS_BRANCH is the *target* branch — the base side.
+  # On a push build it is the branch itself, so diff against its parent.
+  - BASE_REF="${TRAVIS_PULL_REQUEST_SHA:+origin/$TRAVIS_BRANCH}"
+  - BASE_REF="${BASE_REF:-HEAD~1}"
+  - git worktree add .base "$BASE_REF"
+  # Both images have the right entrypoint, so each call is just arguments.
+  - docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE"
+    -q --exclude './.base/**' -o cyclonedx-json=head.json dir:.
+  - docker run --rm -v "$PWD:/work" -w /work "$SYFT_IMAGE"
+    -q -o cyclonedx-json=base.json dir:.base
+  # Every gate is opt-in — drop the flags to report without ever failing.
+  - docker run --rm -v "$PWD:/work" -w /work "$SBOM_DIFF_IMAGE"
+    base.json head.json --fail-on major --max-added-transitive 10 | tee sbom-diff.md

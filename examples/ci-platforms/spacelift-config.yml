@@ -1,0 +1,37 @@
+# Spacelift — SBOM diff as a before_apply hook.
+# Copy into .spacelift/config.yml at the root of the stack's repository.
+#
+# The natural fit is a stack that ships a container: the plan has resolved which
+# image tag is about to go live, and nothing has been created yet. A hook
+# command exiting non-zero fails the run before apply.
+#
+# Hooks run *inside the stack's runner image*, which already has to carry your
+# IaC tooling — so this is the one platform here where the published image
+# cannot simply be the job image. Layer both tools into a runner image built
+# once, and reference it below:
+#
+#   FROM ghcr.io/spacelift-io/runner-terraform:latest
+#   USER root
+#   COPY --from=anchore/syft:v1.18.1 /syft /usr/local/bin/syft
+#   RUN pip install --no-cache-dir "git+https://github.com/fabiocicerchia/sbom-diff@v1.0.1"
+#   USER spacelift
+#
+# Those installs happen at image-build time, not on every run.
+version: "1"
+
+stack_defaults:
+  runner_image: YOUR_REGISTRY/spacelift-runner-sbom-diff:latest
+  environment:
+    IMAGE_REPO: registry.example.com/myapp
+    DEPLOYED_TAG: production
+
+stacks:
+  # Replace with your stack's ID (the slug in its Spacelift URL).
+  production-workloads:
+    before_apply:
+      # CANDIDATE_TAG comes from the run — a Spacelift environment variable, a
+      # context, or terraform output. Anything that names the image going live.
+      - syft -q -o cyclonedx-json=/tmp/base.json "$IMAGE_REPO:$DEPLOYED_TAG"
+      - syft -q -o cyclonedx-json=/tmp/head.json "$IMAGE_REPO:$CANDIDATE_TAG"
+      # Every gate is opt-in — drop the flags to report without ever failing.
+      - sbom-diff /tmp/base.json /tmp/head.json --fail-on major --fail-on-license-change

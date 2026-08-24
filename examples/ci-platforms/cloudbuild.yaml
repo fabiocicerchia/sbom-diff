@@ -1,0 +1,40 @@
+# Google Cloud Build — SBOM diff between the live image and the candidate.
+# Copy into cloudbuild.yaml at the repo root.
+#
+# Both tools ship as images with the right entrypoint, so no step needs a
+# shell: syft writes each SBOM straight to a file, sbom-diff reads the pair.
+steps:
+  - id: sbom-deployed
+    name: anchore/syft:v1.18.1
+    args:
+      - -q
+      - -o
+      - cyclonedx-json=/workspace/base.json
+      - ${_IMAGE_REPO}:${_DEPLOYED_TAG}
+
+  - id: sbom-candidate
+    name: anchore/syft:v1.18.1
+    args:
+      - -q
+      - -o
+      - cyclonedx-json=/workspace/head.json
+      - ${_IMAGE_REPO}:${SHORT_SHA}
+
+  - id: diff
+    name: ghcr.io/fabiocicerchia/sbom-diff:1.0.1
+    # Every gate is opt-in — drop the flags to report without ever failing.
+    # A failing step fails the build, so the release stops here.
+    args:
+      - /workspace/base.json
+      - /workspace/head.json
+      - --fail-on
+      - major
+      - --max-added-transitive
+      - "10"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _IMAGE_REPO: europe-north1-docker.pkg.dev/my-project/images/myapp
+  _DEPLOYED_TAG: production
