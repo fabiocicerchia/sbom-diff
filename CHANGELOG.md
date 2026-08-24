@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.1...v1.0.2) (2026-08-24)
+
+
+### Documentation
+
+* **examples:** add drop-in configs for 16 non-GitHub CI systems ([#39](https://github.com/fabiocicerchia/sbom-diff/issues/39)) ([66096dc](https://github.com/fabiocicerchia/sbom-diff/commit/66096dc24acc1e087846e684ffaf9a672501c26e))
+
 ## [1.0.1](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.0...v1.0.1) (2026-08-13)
 
 
