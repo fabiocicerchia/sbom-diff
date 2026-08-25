@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.2...v1.1.0) (2026-08-25)
+
+
+### Features
+
+* **docs:** build the docs site in Actions and drop Read the Docs ([#42](https://github.com/fabiocicerchia/sbom-diff/issues/42)) ([0e95313](https://github.com/fabiocicerchia/sbom-diff/commit/0e95313128654a544d9d560550562240b6f906af))
+
 ## [1.0.2](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.1...v1.0.2) (2026-08-24)
 
 
