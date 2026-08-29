@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/fabiocicerchia/sbom-diff/compare/v1.1.0...v1.1.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* unblock quality and clear the Scorecard pinned-dependencies finding ([#51](https://github.com/fabiocicerchia/sbom-diff/issues/51)) ([9d621c8](https://github.com/fabiocicerchia/sbom-diff/commit/9d621c81c9daf81bbe13eb62a8d5fb07fa6009fd))
+
 ## [1.1.0](https://github.com/fabiocicerchia/sbom-diff/compare/v1.0.2...v1.1.0) (2026-08-25)
 
 
