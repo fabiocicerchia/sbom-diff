@@ -14,6 +14,7 @@ import re
 import sys
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from itertools import zip_longest
 
 # Every purl starts with this scheme; the type follows it directly.
 PURL_PREFIX = "pkg:"
@@ -90,6 +91,29 @@ def split_version(version):
     return [int(p) if p.isdigit() else p for p in core.split(".")], pre
 
 
+def _compare_core(left, right):
+    """Order the dotted core segments; 0 when they are the same version."""
+    # A missing segment is zero, so 1.2 and 1.2.0 are the same version.
+    for a, b in zip_longest(left, right, fillvalue=0):
+        if a == b:
+            continue
+        if isinstance(a, int) and isinstance(b, int):
+            return -1 if a < b else 1
+        return -1 if str(a) < str(b) else 1
+    return 0
+
+
+def _compare_prerelease(left_pre, right_pre):
+    """Order two pre-release suffixes; having none sorts above having one."""
+    if left_pre == right_pre:
+        return 0
+    if not left_pre:
+        return 1
+    if not right_pre:
+        return -1
+    return -1 if left_pre < right_pre else 1
+
+
 def compare_versions(old, new):
     """Order two versions: -1 if old < new, 1 if old > new, 0 if equal.
 
@@ -99,24 +123,7 @@ def compare_versions(old, new):
     """
     left, left_pre = split_version(old)
     right, right_pre = split_version(new)
-
-    for i in range(max(len(left), len(right))):
-        # A missing segment is zero, so 1.2 and 1.2.0 are the same version.
-        a = left[i] if i < len(left) else 0
-        b = right[i] if i < len(right) else 0
-        if a == b:
-            continue
-        if isinstance(a, int) and isinstance(b, int):
-            return -1 if a < b else 1
-        return -1 if str(a) < str(b) else 1
-
-    if left_pre == right_pre:
-        return 0
-    if not left_pre:
-        return 1
-    if not right_pre:
-        return -1
-    return -1 if left_pre < right_pre else 1
+    return _compare_core(left, right) or _compare_prerelease(left_pre, right_pre)
 
 
 def _insert(comps, key, comp):
@@ -224,13 +231,34 @@ def _spdx_purl(package):
     )
 
 
-def _load_spdx(doc):
-    """Normalize an SPDX document into {key: component}."""
+def _spdx_root(doc):
+    """(SPDXID, name) of the package the document is about, either possibly None."""
     root_ref = next(iter(doc.get("documentDescribes") or []), None)
     root_name = next(
         (p.get("name") for p in doc.get("packages", []) if p.get("SPDXID") == root_ref),
         doc.get("name"),
     )
+    return root_ref, root_name
+
+
+def _spdx_component(pkg, direct_refs):
+    """One SPDX package as the normalized component record."""
+    lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
+    purl = _spdx_purl(pkg)
+    return {
+        "name": pkg.get("name", MISSING_FIELD),
+        "version": pkg.get("versionInfo", MISSING_FIELD),
+        "type": DEFAULT_COMPONENT_TYPE,
+        "ecosystem": ecosystem(purl),
+        "licenses": [lic] if lic and lic not in SPDX_NO_LICENSE else [],
+        "purl": purl,
+        "direct": pkg.get("SPDXID") in direct_refs,
+    }
+
+
+def _load_spdx(doc):
+    """Normalize an SPDX document into {key: component}."""
+    root_ref, root_name = _spdx_root(doc)
     direct_refs = _spdx_direct_refs(doc, root_ref)
 
     comps = {}
@@ -239,22 +267,9 @@ def _load_spdx(doc):
             continue  # skip the document/root package
         if root_name and pkg.get("name") == root_name:
             continue
-        lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
-        name = pkg.get("name", MISSING_FIELD)
-        purl = _spdx_purl(pkg)
-        _insert(
-            comps,
-            purl_identity(purl) if purl else name,
-            {
-                "name": name,
-                "version": pkg.get("versionInfo", MISSING_FIELD),
-                "type": DEFAULT_COMPONENT_TYPE,
-                "ecosystem": ecosystem(purl),
-                "licenses": [lic] if lic and lic not in SPDX_NO_LICENSE else [],
-                "purl": purl,
-                "direct": pkg.get("SPDXID") in direct_refs,
-            },
-        )
+        comp = _spdx_component(pkg, direct_refs)
+        purl = comp["purl"]
+        _insert(comps, purl_identity(purl) if purl else comp["name"], comp)
     return comps
 
 
@@ -405,12 +420,8 @@ def counts(added, removed, changed, license_changes):
     )
 
 
-def policy_failures(added, license_changes, totals, policy):
-    """Reasons the check should fail. Empty means pass.
-
-    Every threshold is opt-in: a dependency review that fails by default is a
-    dependency review that gets disabled by default.
-    """
+def _threshold_failures(totals, policy):
+    """The count gates, in the order the report lists them."""
     fails = []
     max_added = policy.get("max_added")
     if max_added is not None and totals.added > max_added:
@@ -430,20 +441,39 @@ def policy_failures(added, license_changes, totals, policy):
         )
     if policy.get("fail_on_license_change") and totals.license_changed:
         fails.append(f"{totals.license_changed} licence change(s)")
+    return fails
 
-    denied = {lic.lower() for lic in policy.get("deny_licenses") or []}
-    if denied:
-        # Checked on what the change *introduces*: components added, and the
-        # new side of a licence that changed under a dependency already there.
-        candidates = list(added.values()) + [n for _o, n in license_changes.values()]
-        hits = [
+
+def _denied_license_hits(added, license_changes, deny_licenses):
+    """ "name (licence)" for every denied licence the change introduces, sorted.
+
+    Checked on what the change *introduces*: components added, and the new side
+    of a licence that changed under a dependency already there.
+    """
+    denied = {lic.lower() for lic in deny_licenses or []}
+    if not denied:
+        return []
+    candidates = list(added.values()) + [n for _o, n in license_changes.values()]
+    return sorted(
+        {
             f"{c['name']} ({lic})"
             for c in candidates
             for lic in c["licenses"]
             if lic.lower() in denied
-        ]
-        if hits:
-            fails.append(f"denied licence(s): {', '.join(sorted(set(hits)))}")
+        }
+    )
+
+
+def policy_failures(added, license_changes, totals, policy):
+    """Reasons the check should fail. Empty means pass.
+
+    Every threshold is opt-in: a dependency review that fails by default is a
+    dependency review that gets disabled by default.
+    """
+    fails = _threshold_failures(totals, policy)
+    hits = _denied_license_hits(added, license_changes, policy.get("deny_licenses"))
+    if hits:
+        fails.append(f"denied licence(s): {', '.join(hits)}")
     return fails
 
 
