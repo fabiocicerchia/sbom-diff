@@ -62,6 +62,23 @@ def ecosystem(purl):
     return ECOSYSTEM.get(kind, kind)
 
 
+def split_version(version):
+    """Split a version into its core segments and its pre-release, if any.
+
+    The pre-release has to come off before the dots: a suffix makes a version
+    *older* than the same version without one, the opposite of how the core
+    segments compare. Build metadata (+sha) carries no precedence, a
+    pre-release (-rc1) does.
+    """
+    text = str(version).lstrip("v")
+    marker = re.search(r"[-+]", text)
+    core = text[: marker.start()] if marker else text
+    pre = ""
+    if marker and text[marker.start()] == "-":
+        pre = text[marker.start() + 1 :].split("+")[0]
+    return [int(p) if p.isdigit() else p for p in core.split(".")], pre
+
+
 def compare_versions(old, new):
     """Order two versions: -1 if old < new, 1 if old > new, 0 if equal.
 
@@ -69,22 +86,8 @@ def compare_versions(old, new):
     string compare for anything not numeric-dotted. semver_jump says how big a
     change is; this says which direction it went.
     """
-
-    def split(v):
-        # The pre-release has to come off before the dots: a suffix makes a
-        # version *older* than the same version without one, the opposite of
-        # how the core segments compare. Build metadata (+sha) carries no
-        # precedence, a pre-release (-rc1) does.
-        s = str(v).lstrip("v")
-        marker = re.search(r"[-+]", s)
-        core = s[: marker.start()] if marker else s
-        pre = ""
-        if marker and s[marker.start()] == "-":
-            pre = s[marker.start() + 1 :].split("+")[0]
-        return [int(p) if p.isdigit() else p for p in core.split(".")], pre
-
-    left, left_pre = split(old)
-    right, right_pre = split(new)
+    left, left_pre = split_version(old)
+    right, right_pre = split_version(new)
 
     for i in range(max(len(left), len(right))):
         # A missing segment is zero, so 1.2 and 1.2.0 are the same version.
