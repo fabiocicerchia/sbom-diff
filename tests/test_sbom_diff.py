@@ -3,6 +3,7 @@ import json
 import pytest
 
 from sbom_diff import (
+    Counts,
     compare_versions,
     counts,
     diff,
@@ -260,11 +261,11 @@ def test_counts_split_added_by_depth_and_spot_downgrades(sboms):
     old, new = sboms
     added, removed, changed, licenses, _renamed = diff(load_components(old), load_components(new))
     totals = counts(added, removed, changed, licenses)
-    assert totals["added"] == 1 and totals["added_transitive"] == 1
-    assert totals["removed"] == 1 and totals["changed"] == 1
-    assert totals["license_changed"] == 1
+    assert totals.added == 1 and totals.added_transitive == 1
+    assert totals.removed == 1 and totals.changed == 1
+    assert totals.license_changed == 1
     # openssl 3.0.1 -> 4.0.0 is an upgrade.
-    assert totals["downgrades"] == 0
+    assert totals.downgrades == 0
 
 
 def test_downgrade_detection(tmp_path):
@@ -273,21 +274,21 @@ def test_downgrade_detection(tmp_path):
     old_p, new_p = write(tmp_path, "o.json", old), write(tmp_path, "n.json", new)
 
     added, removed, changed, licenses, _ = diff(load_components(old_p), load_components(new_p))
-    assert counts(added, removed, changed, licenses)["downgrades"] == 1
+    assert counts(added, removed, changed, licenses).downgrades == 1
     assert main([old_p, new_p, "--fail-on-downgrade"]) == 1
     assert main([old_p, new_p]) == 0
 
 
 def test_policy_thresholds_are_opt_in():
-    totals = {
-        "added": 5,
-        "added_direct": 2,
-        "added_transitive": 3,
-        "removed": 0,
-        "changed": 0,
-        "license_changed": 1,
-        "downgrades": 1,
-    }
+    totals = Counts(
+        added=5,
+        added_direct=2,
+        added_transitive=3,
+        removed=0,
+        changed=0,
+        license_changed=1,
+        downgrades=1,
+    )
     assert policy_failures({}, {}, totals, {}) == []
 
     fails = policy_failures(

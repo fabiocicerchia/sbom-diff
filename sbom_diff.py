@@ -13,6 +13,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from dataclasses import asdict, dataclass
 
 # Every purl starts with this scheme; the type follows it directly.
 PURL_PREFIX = "pkg:"
@@ -345,7 +346,7 @@ def transitive_count(added):
     """How many added components the document does not name as direct.
 
     One definition, because three numbers have to agree: the headline summary,
-    the "New dependencies" heading, and counts["added_transitive"] in --json.
+    the "New dependencies" heading, and Counts.added_transitive in --json.
     """
     return sum(1 for c in added.values() if not c.get("direct"))
 
@@ -354,27 +355,44 @@ def downgrade_count(changed):
     """How many changed components moved to a lower version.
 
     Same reason as transitive_count: the summary line and
-    counts["downgrades"] are read side by side and must not disagree.
+    Counts.downgrades are read side by side and must not disagree.
     """
     return sum(1 for o, n in changed.values() if is_downgrade(o, n))
 
 
-def counts(added, removed, changed, license_changes):
+@dataclass(frozen=True)
+class Counts:
     """Headline numbers, including the direct/transitive split callers gate on.
+
+    Field order is the key order of the --json "counts" object, which callers
+    read; asdict() is the only place it turns back into a dict.
+    """
+
+    added: int
+    added_direct: int
+    added_transitive: int
+    removed: int
+    changed: int
+    license_changed: int
+    downgrades: int
+
+
+def counts(added, removed, changed, license_changes):
+    """Count the diff.
 
     The transitive count is the one nobody sees in a pull request diff and
     everybody cares about once it is put in front of them.
     """
     transitive = transitive_count(added)
-    return {
-        "added": len(added),
-        "added_direct": len(added) - transitive,
-        "added_transitive": transitive,
-        "removed": len(removed),
-        "changed": len(changed),
-        "license_changed": len(license_changes),
-        "downgrades": downgrade_count(changed),
-    }
+    return Counts(
+        added=len(added),
+        added_direct=len(added) - transitive,
+        added_transitive=transitive,
+        removed=len(removed),
+        changed=len(changed),
+        license_changed=len(license_changes),
+        downgrades=downgrade_count(changed),
+    )
 
 
 def policy_failures(added, license_changes, totals, policy):
@@ -385,23 +403,23 @@ def policy_failures(added, license_changes, totals, policy):
     """
     fails = []
     max_added = policy.get("max_added")
-    if max_added is not None and totals["added"] > max_added:
-        fails.append(f"{totals['added']} components added, over the limit of {max_added}")
+    if max_added is not None and totals.added > max_added:
+        fails.append(f"{totals.added} components added, over the limit of {max_added}")
 
     max_transitive = policy.get("max_added_transitive")
-    if max_transitive is not None and totals["added_transitive"] > max_transitive:
+    if max_transitive is not None and totals.added_transitive > max_transitive:
         fails.append(
-            f"{totals['added_transitive']} transitive components added, "
+            f"{totals.added_transitive} transitive components added, "
             f"over the limit of {max_transitive}"
         )
 
-    if policy.get("fail_on_downgrade") and totals["downgrades"]:
+    if policy.get("fail_on_downgrade") and totals.downgrades:
         fails.append(
-            f"{totals['downgrades']} component(s) downgraded — usually a lockfile "
+            f"{totals.downgrades} component(s) downgraded — usually a lockfile "
             "conflict resolved the wrong way"
         )
-    if policy.get("fail_on_license_change") and totals["license_changed"]:
-        fails.append(f"{totals['license_changed']} licence change(s)")
+    if policy.get("fail_on_license_change") and totals.license_changed:
+        fails.append(f"{totals.license_changed} licence change(s)")
 
     denied = {lic.lower() for lic in policy.get("deny_licenses") or []}
     if denied:
@@ -619,7 +637,7 @@ def json_payload(report, summary, totals, changes, vulns):
         # The rendered report travels with the numbers so a caller that wants
         # both does not have to run the diff twice.
         "markdown": report,
-        "counts": totals,
+        "counts": asdict(totals),
         "added": added,
         "removed": removed,
         "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
