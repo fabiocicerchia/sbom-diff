@@ -4,8 +4,10 @@ Guidance for Claude Code (and other AI agents) working in this repo.
 
 ## Project
 
-sbom-diff is a single-module Python CLI (`sbom_diff.py`, entry point
-`sbom_diff:main`). It diffs two SBOMs (CycloneDX or SPDX JSON) and renders the
+sbom-diff is a Python CLI: `sbom_diff.py` is the entry point (`sbom_diff:main`)
+and does nothing but call `sbom_diff_lib.cli.main`; the code lives in the
+`sbom_diff_lib` package, one module per job (see `docs/architecture.md`).
+It diffs two SBOMs (CycloneDX or SPDX JSON) and renders the
 dependency changes as plain-language markdown: major-version jumps first,
 license changes flagged, added/removed dependencies grouped.
 

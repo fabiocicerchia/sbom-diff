@@ -1,7 +1,8 @@
 # Architecture
 
-sbom-diff is a single module (`sbom_diff.py`) with no runtime dependencies. It
-reads two SBOM files and prints a plain-language diff.
+sbom-diff has no runtime dependencies. It reads two SBOM files and prints a
+plain-language diff. `sbom_diff.py` is the entry point and does nothing but
+call into `sbom_diff_lib`, a package of one-job modules.
 
 ## Overview
 
@@ -11,21 +12,31 @@ old.json ─┐
 new.json ─┘
 ```
 
-## Components
+## Modules
 
-- **parse** — `_load_cyclonedx` and `_load_spdx`, one per format, normalize
-  into `{key: {name, version, type, ecosystem, licenses, purl, direct}}`;
-  `load_vulnerabilities` does the same for embedded CycloneDX VEX data.
-  `read_sbom` wraps both and turns an unusable file into an exit code.
-- **compare** — `diff` and `diff_vulnerabilities`: set operations on the match
-  keys — added, removed, changed, renamed, and vulnerability state changes.
-- **classify** — `classify_jumps` buckets version changes into major / minor /
-  patch / other; `is_downgrade` marks the ones that went backwards.
-- **gate** — `policy_failures` turns a `Counts` into reasons to fail; empty
-  means pass. `fail_on_verdict` covers `--fail-on`.
-- **render** — one `_render_*` per section plus `summarize` for the headline,
-  emitting markdown (default) or JSON (`--json`, carrying the counts and the
+One module per job, under `sbom_diff_lib/`:
+
+- **`purl.py`** — the PURL identity two SBOMs are matched on, and the
+  ecosystem name a purl type maps to.
+- **`versions.py`** — version arithmetic: `semver_jump` says how big a change
+  is, `compare_versions` / `is_downgrade` say which direction it went.
+- **`normalize.py`** — `load_cyclonedx` and `load_spdx`, one per format,
+  normalize into `{key: {name, version, type, ecosystem, licenses, purl,
+  direct}}`.
+- **`load.py`** — reading a file off disk: format detection,
+  `load_vulnerabilities` for embedded CycloneDX VEX data, and `read_sbom`,
+  which turns an unusable file into an exit code.
+- **`compare.py`** — `diff` and `diff_vulnerabilities`: set operations on the
+  match keys — added, removed, changed, renamed, and vulnerability state
+  changes — plus `counts`, which produces the `Counts` record.
+- **`policy.py`** — the gates. `policy_failures` turns a `Counts` into reasons
+  to fail; empty means pass. `fail_on_verdict` covers `--fail-on`.
+- **`render.py`** — `classify_jumps` buckets version changes into major /
+  minor / patch / other, one `_render_*` per section, `summarize` for the
+  headline, and `json_payload` for `--json` (which carries the counts and the
   rendered markdown together so a caller needing both runs the diff once).
+- **`exits.py`** — the exit-code table and `SbomError`, which carries a code.
+- **`cli.py`** — the argument parser and `main`.
 
 ## Data flow
 

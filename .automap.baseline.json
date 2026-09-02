@@ -2,12 +2,19 @@
   "components": {
     "sbom_diff": {
       "fan_in": 0,
-      "fan_out": 0,
+      "fan_out": 1,
       "modules": 1
+    },
+    "sbom_diff_lib": {
+      "fan_in": 1,
+      "fan_out": 0,
+      "modules": 10
     }
   },
   "cycles": [],
-  "edges": [],
+  "edges": [
+    "sbom_diff -> sbom_diff_lib"
+  ],
   "external": [],
   "version": "2.0",
   "violations": []
