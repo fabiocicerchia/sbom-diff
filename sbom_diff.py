@@ -126,6 +126,127 @@ def _insert(comps, key, comp):
         seen["direct"] = True
 
 
+def _cyclonedx_direct_refs(doc, root_ref):
+    """bom-refs the root component depends on, or an empty set without a graph.
+
+    The dependency graph, when present, is how "direct" is known. Without it
+    every component reports as transitive — the honest default, since claiming
+    a dependency is direct without evidence is worse than not saying.
+    """
+    if not root_ref:
+        return set()
+    entry = next((d for d in doc.get("dependencies") or [] if d.get("ref") == root_ref), None)
+    return set(entry.get("dependsOn") or []) if entry else set()
+
+
+def _cyclonedx_licenses(component):
+    """SPDX ids, free-text names and expressions all flattened to a sorted list."""
+    ids = [
+        lic.get("license", {}).get("id")
+        or lic.get("license", {}).get("name")
+        or lic.get("expression")
+        for lic in component.get("licenses", [])
+    ]
+    return sorted(filter(None, ids))
+
+
+def _load_cyclonedx(doc):
+    """Normalize a CycloneDX document into {key: component}."""
+    root = (doc.get("metadata") or {}).get("component") or {}
+    root_ref, root_name = root.get("bom-ref"), root.get("name")
+    direct_refs = _cyclonedx_direct_refs(doc, root_ref)
+
+    comps = {}
+    for c in doc.get("components", []):
+        # The project is not one of its own dependencies. syft catalogues it
+        # under a different bom-ref from metadata.component when scanning a
+        # directory, so the name is checked too.
+        if root_ref and c.get("bom-ref") == root_ref:
+            continue
+        if root_name and c.get("name") == root_name:
+            continue
+        name = c.get("name", MISSING_FIELD)
+        purl = c.get("purl")
+        _insert(
+            comps,
+            purl_identity(purl) if purl else name,
+            {
+                "name": name,
+                "version": c.get("version", MISSING_FIELD),
+                "type": c.get("type", DEFAULT_COMPONENT_TYPE),
+                "ecosystem": ecosystem(purl),
+                "licenses": _cyclonedx_licenses(c),
+                "purl": purl,
+                "direct": c.get("bom-ref") in direct_refs,
+            },
+        )
+    return comps
+
+
+def _spdx_direct_refs(doc, root_ref):
+    """SPDXIDs the root package depends on.
+
+    SPDX states the relationship in either direction depending on which tool
+    produced the document, so both are read.
+    """
+    if not root_ref:
+        return set()
+    direct_refs = set()
+    for rel in doc.get("relationships") or []:
+        relationship = rel.get("relationshipType")
+        if relationship == "DEPENDS_ON" and rel.get("spdxElementId") == root_ref:
+            direct_refs.add(rel.get("relatedSpdxElement"))
+        if relationship == "DEPENDENCY_OF" and rel.get("relatedSpdxElement") == root_ref:
+            direct_refs.add(rel.get("spdxElementId"))
+    return direct_refs
+
+
+def _spdx_purl(package):
+    """The package's purl from its externalRefs, or None when it carries none."""
+    return next(
+        (
+            ref.get("referenceLocator")
+            for ref in package.get("externalRefs", [])
+            if ref.get("referenceType") == "purl"
+        ),
+        None,
+    )
+
+
+def _load_spdx(doc):
+    """Normalize an SPDX document into {key: component}."""
+    root_ref = next(iter(doc.get("documentDescribes") or []), None)
+    root_name = next(
+        (p.get("name") for p in doc.get("packages", []) if p.get("SPDXID") == root_ref),
+        doc.get("name"),
+    )
+    direct_refs = _spdx_direct_refs(doc, root_ref)
+
+    comps = {}
+    for pkg in doc.get("packages", []):
+        if pkg.get("SPDXID") == root_ref:
+            continue  # skip the document/root package
+        if root_name and pkg.get("name") == root_name:
+            continue
+        lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
+        name = pkg.get("name", MISSING_FIELD)
+        purl = _spdx_purl(pkg)
+        _insert(
+            comps,
+            purl_identity(purl) if purl else name,
+            {
+                "name": name,
+                "version": pkg.get("versionInfo", MISSING_FIELD),
+                "type": DEFAULT_COMPONENT_TYPE,
+                "ecosystem": ecosystem(purl),
+                "licenses": [lic] if lic and lic not in SPDX_NO_LICENSE else [],
+                "purl": purl,
+                "direct": pkg.get("SPDXID") in direct_refs,
+            },
+        )
+    return comps
+
+
 def load_components(path):
     """Return {key: {name, version, ...}} plus license info from either format.
 
@@ -135,106 +256,11 @@ def load_components(path):
     with open(path) as fh:
         doc = json.load(fh)
 
-    comps = {}
     if "components" in doc or doc.get("bomFormat") == "CycloneDX":
-        root = (doc.get("metadata") or {}).get("component") or {}
-        root_ref, root_name = root.get("bom-ref"), root.get("name")
-
-        # The dependency graph, when present, is how "direct" is known. Without
-        # it every component reports as transitive — the honest default, since
-        # claiming a dependency is direct without evidence is worse than not
-        # saying.
-        direct_refs = set()
-        if root_ref:
-            entry = next(
-                (d for d in doc.get("dependencies") or [] if d.get("ref") == root_ref), None
-            )
-            if entry:
-                direct_refs = set(entry.get("dependsOn") or [])
-
-        for c in doc.get("components", []):
-            # The project is not one of its own dependencies. syft catalogues it
-            # under a different bom-ref from metadata.component when scanning a
-            # directory, so the name is checked too.
-            if root_ref and c.get("bom-ref") == root_ref:
-                continue
-            if root_name and c.get("name") == root_name:
-                continue
-            licenses = [
-                lic.get("license", {}).get("id")
-                or lic.get("license", {}).get("name")
-                or lic.get("expression")
-                for lic in c.get("licenses", [])
-            ]
-            name = c.get("name", MISSING_FIELD)
-            purl = c.get("purl")
-            key = purl_identity(purl) if purl else name
-            _insert(
-                comps,
-                key,
-                {
-                    "name": name,
-                    "version": c.get("version", MISSING_FIELD),
-                    "type": c.get("type", DEFAULT_COMPONENT_TYPE),
-                    "ecosystem": ecosystem(purl),
-                    "licenses": sorted(filter(None, licenses)),
-                    "purl": purl,
-                    "direct": c.get("bom-ref") in direct_refs,
-                },
-            )
-    elif "spdxVersion" in doc:
-        root_ref = next(iter(doc.get("documentDescribes") or []), None)
-        root_name = next(
-            (p.get("name") for p in doc.get("packages", []) if p.get("SPDXID") == root_ref),
-            doc.get("name"),
-        )
-
-        # SPDX states the relationship in either direction depending on which
-        # tool produced the document, so both are read.
-        direct_refs = set()
-        for rel in doc.get("relationships") or []:
-            if not root_ref:
-                break
-            if rel.get("relationshipType") == "DEPENDS_ON" and rel.get("spdxElementId") == root_ref:
-                direct_refs.add(rel.get("relatedSpdxElement"))
-            if (
-                rel.get("relationshipType") == "DEPENDENCY_OF"
-                and rel.get("relatedSpdxElement") == root_ref
-            ):
-                direct_refs.add(rel.get("spdxElementId"))
-
-        for pkg in doc.get("packages", []):
-            if pkg.get("SPDXID") == root_ref:
-                continue  # skip the document/root package
-            if root_name and pkg.get("name") == root_name:
-                continue
-            lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
-            name = pkg.get("name", MISSING_FIELD)
-            purl = next(
-                (
-                    ref.get("referenceLocator")
-                    for ref in pkg.get("externalRefs", [])
-                    if ref.get("referenceType") == "purl"
-                ),
-                None,
-            )
-            key = purl_identity(purl) if purl else name
-            _insert(
-                comps,
-                key,
-                {
-                    "name": name,
-                    "version": pkg.get("versionInfo", MISSING_FIELD),
-                    "type": DEFAULT_COMPONENT_TYPE,
-                    "ecosystem": ecosystem(purl),
-                    "licenses": [lic] if lic and lic not in SPDX_NO_LICENSE else [],
-                    "purl": purl,
-                    "direct": pkg.get("SPDXID") in direct_refs,
-                },
-            )
-    else:
-        raise ValueError(f"{path}: not a recognizable CycloneDX or SPDX JSON SBOM")
-    return comps
+        return _load_cyclonedx(doc)
+    if "spdxVersion" in doc:
+        return _load_spdx(doc)
+    raise ValueError(f"{path}: not a recognizable CycloneDX or SPDX JSON SBOM")
 
 
 def load_vulnerabilities(path):
@@ -393,9 +419,8 @@ def policy_failures(added, license_changes, totals, policy):
     return fails
 
 
-def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
-    renamed = renamed or {}
-    lines = []
+def classify_jumps(changed):
+    """Bucket every version change by size, in name order, ready to render."""
     jumps = defaultdict(list)
     for o, n in sorted(changed.values(), key=lambda pair: pair[0]["name"]):
         # A downgrade is flagged wherever it lands: 2.0.0 -> 1.9.0 is classified
@@ -404,14 +429,22 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
         jumps[semver_jump(o["version"], n["version"])].append(
             (o["name"], o["version"], n["version"], note)
         )
+    return jumps
 
-    if renamed:
-        lines.append(f"## Renamed ({len(renamed)})\n")
-        for _, (o, n) in sorted(renamed.items(), key=lambda kv: kv[1][0]["name"]):
-            note = f" ({o['version']} → {n['version']})" if o["version"] != n["version"] else ""
-            lines.append(f"- **{o['name']}** → **{n['name']}**{note}")
-        lines.append("")
 
+def _render_renamed(renamed):
+    if not renamed:
+        return []
+    lines = [f"## Renamed ({len(renamed)})\n"]
+    for _, (o, n) in sorted(renamed.items(), key=lambda kv: kv[1][0]["name"]):
+        note = f" ({o['version']} → {n['version']})" if o["version"] != n["version"] else ""
+        lines.append(f"- **{o['name']}** → **{n['name']}**{note}")
+    return lines + [""]
+
+
+def _render_jumps(jumps):
+    """Major first and bolded, then the calmer buckets in decreasing size."""
+    lines = []
     if jumps["major"]:
         lines.append("## ⚠ Major version jumps (review breaking changes)\n")
         lines += [f"- **{n}**: {o} → {v}{note}" for n, o, v, note in jumps["major"]]
@@ -425,49 +458,77 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
             lines.append(f"## {label}\n")
             lines += [f"- {n}: {o} → {v}{note}" for n, o, v, note in jumps[key]]
             lines.append("")
-    if added:
-        transitive = transitive_count(added)
-        heading = f"## New dependencies ({len(added)}"
-        heading += f", {transitive} transitive)\n" if transitive else ")\n"
-        lines.append(heading)
-        lines += [
+    return lines
+
+
+def _render_added(added):
+    if not added:
+        return []
+    transitive = transitive_count(added)
+    heading = f"## New dependencies ({len(added)}"
+    heading += f", {transitive} transitive)\n" if transitive else ")\n"
+    return (
+        [heading]
+        + [
             f"- {c['name']} {c['version']}" + ("" if c.get("direct") else " _(transitive)_")
             for c in sorted(added.values(), key=lambda c: c["name"])
         ]
-        lines.append("")
-    if removed:
-        lines.append(f"## Removed dependencies ({len(removed)})\n")
-        lines += [
+        + [""]
+    )
+
+
+def _render_removed(removed):
+    if not removed:
+        return []
+    return (
+        [f"## Removed dependencies ({len(removed)})\n"]
+        + [
             f"- {c['name']} {c['version']}"
             for c in sorted(removed.values(), key=lambda c: c["name"])
         ]
-        lines.append("")
-    if license_changes:
-        lines.append("## ⚠ License changes\n")
-        lines += [
+        + [""]
+    )
+
+
+def _render_license_changes(license_changes):
+    if not license_changes:
+        return []
+    return (
+        ["## ⚠ License changes\n"]
+        + [
             f"- **{o['name']}**: {', '.join(o['licenses']) or '(none)'} → "
             f"{', '.join(n['licenses']) or '(none)'}"
             for o, n in sorted(license_changes.values(), key=lambda pair: pair[0]["name"])
         ]
-        lines.append("")
+        + [""]
+    )
 
+
+def _render_vulnerabilities(vulns):
+    """The VEX delta: newly reported, gone, and state changes, in that order."""
     added_v, removed_v, changed_v = vulns or ({}, {}, {})
-    if added_v or removed_v or changed_v:
-        lines.append("## Vulnerability changes (VEX)\n")
-        lines += [
+    if not (added_v or removed_v or changed_v):
+        return []
+    return (
+        ["## Vulnerability changes (VEX)\n"]
+        + [
             f"- ⚠ **{vid}** newly reported ({v['state']}{', ' + v['severity'] if v['severity'] else ''})"
             for vid, v in sorted(added_v.items())
         ]
-        lines += [
+        + [
             f"- ✅ **{vid}** no longer reported (was: {v['state']})"
             for vid, v in sorted(removed_v.items())
         ]
-        lines += [
+        + [
             f"- 🔄 **{vid}**: {old_state} → {new_state}"
             for vid, (old_state, new_state) in sorted(changed_v.items())
         ]
-        lines.append("")
+        + [""]
+    )
 
+
+def summarize(added, removed, changed, renamed, jumps):
+    """The one-line headline that leads the report and the --json payload."""
     total = len(added) + len(removed) + len(changed)
     transitive = transitive_count(added)
     added_desc = f"{len(added)} added"
@@ -482,10 +543,27 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
         summary += f", {downgrades} downgraded"
     if renamed:
         summary += f", {len(renamed)} renamed"
+    return summary
+
+
+def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
+    """Return (headline, markdown body); sections run most to least alarming."""
+    renamed = renamed or {}
+    jumps = classify_jumps(changed)
+    lines = (
+        _render_renamed(renamed)
+        + _render_jumps(jumps)
+        + _render_added(added)
+        + _render_removed(removed)
+        + _render_license_changes(license_changes)
+        + _render_vulnerabilities(vulns)
+    )
+    summary = summarize(added, removed, changed, renamed, jumps)
     return summary, "\n".join(lines)
 
 
-def main(argv=None):
+def build_parser():
+    """The CLI surface. Every gate is opt-in and every one of them exits 1."""
     p = argparse.ArgumentParser(
         prog="sbom-diff", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -518,71 +596,76 @@ def main(argv=None):
         default="",
         help="comma/newline separated license IDs that must not appear on an added component",
     )
-    args = p.parse_args(argv)
+    return p
 
-    added, removed, changed, licenses, renamed = diff(
-        load_components(args.old), load_components(args.new)
-    )
-    vuln_added, vuln_removed, vuln_changed = diff_vulnerabilities(
-        load_vulnerabilities(args.old), load_vulnerabilities(args.new)
-    )
-    summary, body = explain(
-        added, removed, changed, licenses, renamed, (vuln_added, vuln_removed, vuln_changed)
-    )
+
+def policy_from_args(args):
+    """The gate settings, lifted out of argparse so policy_failures never sees it."""
+    return {
+        "max_added": args.max_added,
+        "max_added_transitive": args.max_added_transitive,
+        "fail_on_downgrade": args.fail_on_downgrade,
+        "fail_on_license_change": args.fail_on_license_change,
+        "deny_licenses": [s.strip() for s in re.split(r"[,\n]", args.deny_licenses) if s.strip()],
+    }
+
+
+def json_payload(report, summary, totals, changes, vulns):
+    """The --json document. Its shape is a contract; callers read these keys."""
+    added, removed, changed, licenses, renamed = changes
+    vuln_added, vuln_removed, vuln_changed = vulns
+    return {
+        "summary": summary,
+        # The rendered report travels with the numbers so a caller that wants
+        # both does not have to run the diff twice.
+        "markdown": report,
+        "counts": totals,
+        "added": added,
+        "removed": removed,
+        "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
+        "renamed": {k: {"old": o, "new": n} for k, (o, n) in renamed.items()},
+        "license_changes": {k: {"old": o, "new": n} for k, (o, n) in licenses.items()},
+        "vulnerabilities": {
+            "added": vuln_added,
+            "removed": vuln_removed,
+            "changed": {vid: {"old": o, "new": n} for vid, (o, n) in vuln_changed.items()},
+        },
+    }
+
+
+def fail_on_verdict(fail_on, added, removed, changed, license_changes):
+    """True when --fail-on's chosen class of change is present."""
+    if fail_on == "any":
+        return bool(added or removed or changed)
+    if fail_on == "major":
+        return any(semver_jump(o["version"], n["version"]) == "major" for o, n in changed.values())
+    if fail_on == "license":
+        return bool(license_changes)
+    return False
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+
+    changes = diff(load_components(args.old), load_components(args.new))
+    added, removed, changed, licenses, renamed = changes
+    vulns = diff_vulnerabilities(load_vulnerabilities(args.old), load_vulnerabilities(args.new))
+    summary, body = explain(added, removed, changed, licenses, renamed, vulns)
 
     totals = counts(added, removed, changed, licenses)
     # One string, rendered once: --json carries the same markdown stdout prints.
     report = f"# SBOM diff\n\n{summary}\n\n{body}"
 
     if args.json:
-        json.dump(
-            {
-                "summary": summary,
-                # The rendered report travels with the numbers so a caller that
-                # wants both does not have to run the diff twice.
-                "markdown": report,
-                "counts": totals,
-                "added": added,
-                "removed": removed,
-                "changed": {k: {"old": o, "new": n} for k, (o, n) in changed.items()},
-                "renamed": {k: {"old": o, "new": n} for k, (o, n) in renamed.items()},
-                "license_changes": {k: {"old": o, "new": n} for k, (o, n) in licenses.items()},
-                "vulnerabilities": {
-                    "added": vuln_added,
-                    "removed": vuln_removed,
-                    "changed": {vid: {"old": o, "new": n} for vid, (o, n) in vuln_changed.items()},
-                },
-            },
-            sys.stdout,
-            indent=2,
-        )
+        json.dump(json_payload(report, summary, totals, changes, vulns), sys.stdout, indent=2)
     else:
         print(report)
 
-    fails = policy_failures(
-        added,
-        licenses,
-        totals,
-        {
-            "max_added": args.max_added,
-            "max_added_transitive": args.max_added_transitive,
-            "fail_on_downgrade": args.fail_on_downgrade,
-            "fail_on_license_change": args.fail_on_license_change,
-            "deny_licenses": [
-                s.strip() for s in re.split(r"[,\n]", args.deny_licenses) if s.strip()
-            ],
-        },
-    )
+    fails = policy_failures(added, licenses, totals, policy_from_args(args))
     for reason in fails:
         print(f"sbom-diff: {reason}", file=sys.stderr)
 
-    if args.fail_on == "any" and (added or removed or changed):
-        return 1
-    if args.fail_on == "major" and any(
-        semver_jump(o["version"], n["version"]) == "major" for o, n in changed.values()
-    ):
-        return 1
-    if args.fail_on == "license" and licenses:
+    if fail_on_verdict(args.fail_on, added, removed, changed, licenses):
         return 1
     return 1 if fails else 0
 
