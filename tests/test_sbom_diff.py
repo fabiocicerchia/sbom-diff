@@ -2,20 +2,12 @@ import json
 
 import pytest
 
-from sbom_diff import (
-    Counts,
-    compare_versions,
-    counts,
-    diff,
-    diff_vulnerabilities,
-    ecosystem,
-    load_components,
-    load_vulnerabilities,
-    main,
-    policy_failures,
-    purl_identity,
-    semver_jump,
-)
+from sbom_diff import main
+from sbom_diff_lib.compare import Counts, counts, diff, diff_vulnerabilities
+from sbom_diff_lib.load import load_components, load_vulnerabilities
+from sbom_diff_lib.policy import policy_failures
+from sbom_diff_lib.purl import ecosystem, purl_identity
+from sbom_diff_lib.versions import compare_versions, semver_jump
 
 
 def cyclonedx(components):

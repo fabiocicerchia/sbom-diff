@@ -33,6 +33,7 @@ sbom-diff = "sbom_diff:main"
 
 [tool.setuptools]
 py-modules = ["sbom_diff"]
+packages = ["sbom_diff_lib"]
 
 # Import sbom_diff from the checkout, not from whatever copy happens to be in
 # site-packages. Without this, `pytest` (the console script, which does not put
