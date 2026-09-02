@@ -325,3 +325,22 @@ def test_json_output_carries_counts_and_markdown(sboms, capsys):
     assert payload["counts"]["added"] == 1
     assert payload["markdown"].startswith("# SBOM diff")
     assert payload["summary"] in payload["markdown"]
+
+
+def test_unusable_input_exits_by_kind_not_as_a_gate(tmp_path, capsys):
+    # A broken SBOM is not a gate tripping, so it must not exit 1 — and it must
+    # not reach the user as a traceback either.
+    good = write(tmp_path, "good.json", cyclonedx([]))
+    not_json = tmp_path / "not.json"
+    not_json.write_text("<html>404</html>")
+    not_sbom = write(tmp_path, "other.json", {"hello": "world"})
+
+    assert main([str(tmp_path / "absent.json"), good]) == 66
+    assert main([str(not_json), good]) == 65
+    assert main([not_sbom, good]) == 65
+    assert main([str(tmp_path), good]) == 74
+
+    errors = capsys.readouterr().err.splitlines()
+    assert errors[0].endswith("absent.json: no such file")
+    assert "not valid JSON" in errors[1]
+    assert errors[2].endswith("not a recognizable CycloneDX or SPDX JSON SBOM")

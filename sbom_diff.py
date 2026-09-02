@@ -27,6 +27,16 @@ DEFAULT_COMPONENT_TYPE = "library"
 # SPDX's two ways of saying "no licence stated"; neither is a licence.
 SPDX_NO_LICENSE = ("NOASSERTION", "NONE")
 
+# Exit codes, following sysexits(3). 0 and 1 are the documented gate contract
+# and keep their meanings; the rest separate "this input is unusable" from
+# "a gate tripped", which both used to surface as an uncaught traceback.
+EXIT_OK = 0
+EXIT_GATE_FAILED = 1
+EXIT_DATAERR = 65  # EX_DATAERR: not JSON, or JSON that is not an SBOM
+EXIT_NOINPUT = 66  # EX_NOINPUT: the file is not there
+EXIT_IOERR = 74  # EX_IOERR: it is there but cannot be read
+EXIT_NOPERM = 77  # EX_NOPERM: permission denied
+
 # purl identity: everything up to the first version/qualifier/subpath marker,
 # e.g. "pkg:pypi/requests@2.31.0" -> "pkg:pypi/requests". Two components with
 # the same identity are the same package even if their SBOM "name" differs.
@@ -580,6 +590,35 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
     return summary, "\n".join(lines)
 
 
+class SbomError(Exception):
+    """An input the tool cannot use, carrying the exit code that reports it."""
+
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
+
+
+def read_sbom(path):
+    """Return (components, vulnerabilities) for one SBOM, or raise SbomError.
+
+    Every expected failure becomes an SbomError so main can print one line and
+    exit with a code that says which kind it was. Anything not listed here is a
+    bug in this tool and keeps its traceback.
+    """
+    try:
+        return load_components(path), load_vulnerabilities(path)
+    except FileNotFoundError:
+        raise SbomError(f"{path}: no such file", EXIT_NOINPUT) from None
+    except PermissionError:
+        raise SbomError(f"{path}: permission denied", EXIT_NOPERM) from None
+    except OSError as exc:
+        raise SbomError(f"{path}: {exc.strerror}", EXIT_IOERR) from None
+    except json.JSONDecodeError as exc:
+        raise SbomError(f"{path}: not valid JSON: {exc}", EXIT_DATAERR) from None
+    except ValueError as exc:
+        raise SbomError(str(exc), EXIT_DATAERR) from None
+
+
 def build_parser():
     """The CLI surface. Every gate is opt-in and every one of them exits 1."""
     p = argparse.ArgumentParser(
@@ -665,9 +704,16 @@ def fail_on_verdict(fail_on, added, removed, changed, license_changes):
 def main(argv=None):
     args = build_parser().parse_args(argv)
 
-    changes = diff(load_components(args.old), load_components(args.new))
+    try:
+        old_comps, old_vulns = read_sbom(args.old)
+        new_comps, new_vulns = read_sbom(args.new)
+    except SbomError as exc:
+        print(f"sbom-diff: {exc}", file=sys.stderr)
+        return exc.code
+
+    changes = diff(old_comps, new_comps)
     added, removed, changed, licenses, renamed = changes
-    vulns = diff_vulnerabilities(load_vulnerabilities(args.old), load_vulnerabilities(args.new))
+    vulns = diff_vulnerabilities(old_vulns, new_vulns)
     summary, body = explain(added, removed, changed, licenses, renamed, vulns)
 
     totals = counts(added, removed, changed, licenses)
@@ -684,8 +730,8 @@ def main(argv=None):
         print(f"sbom-diff: {reason}", file=sys.stderr)
 
     if fail_on_verdict(args.fail_on, added, removed, changed, licenses):
-        return 1
-    return 1 if fails else 0
+        return EXIT_GATE_FAILED
+    return EXIT_GATE_FAILED if fails else EXIT_OK
 
 
 if __name__ == "__main__":
