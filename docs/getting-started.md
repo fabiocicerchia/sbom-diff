@@ -35,7 +35,8 @@ See [`../examples/basic/`](../examples/basic/) for a runnable pair of SBOMs.
 
 The composite action is GitHub-specific; the CLI is not. It is stdlib-only
 Python 3.10+, takes two SBOM files, prints markdown, and exits `1` when an
-opt-in gate trips — which is all a gate needs anywhere:
+opt-in gate trips (an unusable input gets its own code, not `1`) — which is
+all a gate needs anywhere:
 
 ```sh
 syft -q -o cyclonedx-json=head.json dir:.

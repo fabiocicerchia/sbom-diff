@@ -13,18 +13,19 @@ new.json ─┘
 
 ## Components
 
-- **parse** — normalize CycloneDX or SPDX JSON into `{key: {name, version,
-  type, ecosystem, licenses, purl, direct}}`, plus `{id: {state, severity}}`
-  for any embedded CycloneDX vulnerabilities/VEX data.
-- **compare** — set operations on the match keys: added, removed, changed,
-  renamed; same for vulnerability IDs (added/removed/state-changed).
-- **classify** — bucket version changes into major / minor / patch / other,
-  flag license changes, and mark downgrades.
-- **gate** — `policy_failures` turns counts into reasons to fail; empty means
-  pass.
-- **render** — emit markdown (default) or JSON (`--json`, carrying the counts
-  and the rendered markdown together so a caller needing both runs the diff
-  once).
+- **parse** — `_load_cyclonedx` and `_load_spdx`, one per format, normalize
+  into `{key: {name, version, type, ecosystem, licenses, purl, direct}}`;
+  `load_vulnerabilities` does the same for embedded CycloneDX VEX data.
+  `read_sbom` wraps both and turns an unusable file into an exit code.
+- **compare** — `diff` and `diff_vulnerabilities`: set operations on the match
+  keys — added, removed, changed, renamed, and vulnerability state changes.
+- **classify** — `classify_jumps` buckets version changes into major / minor /
+  patch / other; `is_downgrade` marks the ones that went backwards.
+- **gate** — `policy_failures` turns a `Counts` into reasons to fail; empty
+  means pass. `fail_on_verdict` covers `--fail-on`.
+- **render** — one `_render_*` per section plus `summarize` for the headline,
+  emitting markdown (default) or JSON (`--json`, carrying the counts and the
+  rendered markdown together so a caller needing both runs the diff once).
 
 ## Data flow
 
@@ -39,6 +40,10 @@ version — two copies coexisting in a tree is not a version change.
 `--fail-on {any,major,license}` and the threshold gates (`--max-added`,
 `--max-added-transitive`, `--fail-on-downgrade`, `--fail-on-license-change`,
 `--deny-licenses`) turn the diff into a CI gate by controlling the exit code.
+Only `0` and `1` are gate outcomes; an unusable input exits with its own
+sysexits code (65/66/74/77) so a broken SBOM is not read as a dependency
+problem. The full table is in
+[`examples/ci-platforms/README.md`](../examples/ci-platforms/README.md).
 
 ## Decisions
 
