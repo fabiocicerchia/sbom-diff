@@ -14,6 +14,18 @@ import re
 import sys
 from collections import defaultdict
 
+# Every purl starts with this scheme; the type follows it directly.
+PURL_PREFIX = "pkg:"
+
+# What an SBOM writes when it has no value for a field we still have to show.
+MISSING_FIELD = "?"
+
+# CycloneDX's default component type, and the only one SPDX packages can be.
+DEFAULT_COMPONENT_TYPE = "library"
+
+# SPDX's two ways of saying "no licence stated"; neither is a licence.
+SPDX_NO_LICENSE = ("NOASSERTION", "NONE")
+
 # purl identity: everything up to the first version/qualifier/subpath marker,
 # e.g. "pkg:pypi/requests@2.31.0" -> "pkg:pypi/requests". Two components with
 # the same identity are the same package even if their SBOM "name" differs.
@@ -44,9 +56,9 @@ ECOSYSTEM = {
 
 
 def ecosystem(purl):
-    if not purl or not purl.startswith("pkg:"):
+    if not purl or not purl.startswith(PURL_PREFIX):
         return "unknown"
-    kind = purl[4:].split("/", 1)[0].lower()
+    kind = purl[len(PURL_PREFIX) :].split("/", 1)[0].lower()
     return ECOSYSTEM.get(kind, kind)
 
 
@@ -151,7 +163,7 @@ def load_components(path):
                 or lic.get("expression")
                 for lic in c.get("licenses", [])
             ]
-            name = c.get("name", "?")
+            name = c.get("name", MISSING_FIELD)
             purl = c.get("purl")
             key = purl_identity(purl) if purl else name
             _insert(
@@ -159,8 +171,8 @@ def load_components(path):
                 key,
                 {
                     "name": name,
-                    "version": c.get("version", "?"),
-                    "type": c.get("type", "library"),
+                    "version": c.get("version", MISSING_FIELD),
+                    "type": c.get("type", DEFAULT_COMPONENT_TYPE),
                     "ecosystem": ecosystem(purl),
                     "licenses": sorted(filter(None, licenses)),
                     "purl": purl,
@@ -194,7 +206,7 @@ def load_components(path):
             if root_name and pkg.get("name") == root_name:
                 continue
             lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
-            name = pkg.get("name", "?")
+            name = pkg.get("name", MISSING_FIELD)
             purl = next(
                 (
                     ref.get("referenceLocator")
@@ -209,10 +221,10 @@ def load_components(path):
                 key,
                 {
                     "name": name,
-                    "version": pkg.get("versionInfo", "?"),
-                    "type": "library",
+                    "version": pkg.get("versionInfo", MISSING_FIELD),
+                    "type": DEFAULT_COMPONENT_TYPE,
                     "ecosystem": ecosystem(purl),
-                    "licenses": [lic] if lic and lic not in ("NOASSERTION", "NONE") else [],
+                    "licenses": [lic] if lic and lic not in SPDX_NO_LICENSE else [],
                     "purl": purl,
                     "direct": pkg.get("SPDXID") in direct_refs,
                 },
@@ -234,7 +246,7 @@ def load_vulnerabilities(path):
     vulns = {}
     for v in doc.get("vulnerabilities", []) or []:
         analysis = v.get("analysis") or {}
-        vulns[v.get("id", "?")] = {
+        vulns[v.get("id", MISSING_FIELD)] = {
             "state": analysis.get("state", "unknown"),
             "severity": next(
                 (r.get("severity") for r in v.get("ratings", []) if r.get("severity")), None
