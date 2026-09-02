@@ -312,13 +312,31 @@ def is_downgrade(old, new):
     return compare_versions(old["version"], new["version"]) > 0
 
 
+def transitive_count(added):
+    """How many added components the document does not name as direct.
+
+    One definition, because three numbers have to agree: the headline summary,
+    the "New dependencies" heading, and counts["added_transitive"] in --json.
+    """
+    return sum(1 for c in added.values() if not c.get("direct"))
+
+
+def downgrade_count(changed):
+    """How many changed components moved to a lower version.
+
+    Same reason as transitive_count: the summary line and
+    counts["downgrades"] are read side by side and must not disagree.
+    """
+    return sum(1 for o, n in changed.values() if is_downgrade(o, n))
+
+
 def counts(added, removed, changed, license_changes):
     """Headline numbers, including the direct/transitive split callers gate on.
 
     The transitive count is the one nobody sees in a pull request diff and
     everybody cares about once it is put in front of them.
     """
-    transitive = sum(1 for c in added.values() if not c.get("direct"))
+    transitive = transitive_count(added)
     return {
         "added": len(added),
         "added_direct": len(added) - transitive,
@@ -326,7 +344,7 @@ def counts(added, removed, changed, license_changes):
         "removed": len(removed),
         "changed": len(changed),
         "license_changed": len(license_changes),
-        "downgrades": sum(1 for o, n in changed.values() if is_downgrade(o, n)),
+        "downgrades": downgrade_count(changed),
     }
 
 
@@ -405,7 +423,7 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
             lines += [f"- {n}: {o} → {v}{note}" for n, o, v, note in jumps[key]]
             lines.append("")
     if added:
-        transitive = sum(1 for c in added.values() if not c.get("direct"))
+        transitive = transitive_count(added)
         heading = f"## New dependencies ({len(added)}"
         heading += f", {transitive} transitive)\n" if transitive else ")\n"
         lines.append(heading)
@@ -448,7 +466,7 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
         lines.append("")
 
     total = len(added) + len(removed) + len(changed)
-    transitive = sum(1 for c in added.values() if not c.get("direct"))
+    transitive = transitive_count(added)
     added_desc = f"{len(added)} added"
     if transitive:
         added_desc += f" ({len(added) - transitive} direct, {transitive} transitive)"
@@ -456,7 +474,7 @@ def explain(added, removed, changed, license_changes, renamed=None, vulns=None):
         f"{total} dependency change(s): {added_desc}, {len(removed)} removed, "
         f"{len(changed)} updated ({len(jumps['major'])} major)"
     )
-    downgrades = sum(1 for o, n in changed.values() if is_downgrade(o, n))
+    downgrades = downgrade_count(changed)
     if downgrades:
         summary += f", {downgrades} downgraded"
     if renamed:
@@ -510,6 +528,8 @@ def main(argv=None):
     )
 
     totals = counts(added, removed, changed, licenses)
+    # One string, rendered once: --json carries the same markdown stdout prints.
+    report = f"# SBOM diff\n\n{summary}\n\n{body}"
 
     if args.json:
         json.dump(
@@ -517,7 +537,7 @@ def main(argv=None):
                 "summary": summary,
                 # The rendered report travels with the numbers so a caller that
                 # wants both does not have to run the diff twice.
-                "markdown": f"# SBOM diff\n\n{summary}\n\n{body}",
+                "markdown": report,
                 "counts": totals,
                 "added": added,
                 "removed": removed,
@@ -534,7 +554,7 @@ def main(argv=None):
             indent=2,
         )
     else:
-        print(f"# SBOM diff\n\n{summary}\n\n{body}")
+        print(report)
 
     fails = policy_failures(
         added,
