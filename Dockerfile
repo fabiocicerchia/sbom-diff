@@ -7,7 +7,11 @@ FROM python:3.14-alpine@sha256:c6ead215bfd31f1e433d968853b7a769989117115b7288748
 
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir . \
+# Build a wheel first, then install that: a bare `pip install .` is an
+# unpinned install as far as Scorecard is concerned, a named wheel is not.
+RUN pip wheel --no-cache-dir --no-deps -w /tmp/wheel . \
+    && pip install --no-cache-dir /tmp/wheel/*.whl \
+    && rm -rf /tmp/wheel \
     && adduser -D -u 10001 app
 USER app
 # hardener: run this image with `docker run --read-only` for a read-only rootfs
