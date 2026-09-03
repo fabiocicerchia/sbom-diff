@@ -10,6 +10,7 @@ COPY . .
 RUN pip install --no-cache-dir . \
     && adduser -D -u 10001 app
 USER app
+# hardener: run this image with `docker run --read-only` for a read-only rootfs
 
 # One-shot CLI tool, not a service — this just confirms the interpreter starts.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=1 \

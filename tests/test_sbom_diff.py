@@ -2,19 +2,12 @@ import json
 
 import pytest
 
-from sbom_diff import (
-    compare_versions,
-    counts,
-    diff,
-    diff_vulnerabilities,
-    ecosystem,
-    load_components,
-    load_vulnerabilities,
-    main,
-    policy_failures,
-    purl_identity,
-    semver_jump,
-)
+from sbom_diff import main
+from sbom_diff_lib.compare import Counts, counts, diff, diff_vulnerabilities
+from sbom_diff_lib.load import load_components, load_vulnerabilities
+from sbom_diff_lib.policy import policy_failures
+from sbom_diff_lib.purl import ecosystem, purl_identity
+from sbom_diff_lib.versions import compare_versions, semver_jump
 
 
 def cyclonedx(components):
@@ -260,11 +253,11 @@ def test_counts_split_added_by_depth_and_spot_downgrades(sboms):
     old, new = sboms
     added, removed, changed, licenses, _renamed = diff(load_components(old), load_components(new))
     totals = counts(added, removed, changed, licenses)
-    assert totals["added"] == 1 and totals["added_transitive"] == 1
-    assert totals["removed"] == 1 and totals["changed"] == 1
-    assert totals["license_changed"] == 1
+    assert totals.added == 1 and totals.added_transitive == 1
+    assert totals.removed == 1 and totals.changed == 1
+    assert totals.license_changed == 1
     # openssl 3.0.1 -> 4.0.0 is an upgrade.
-    assert totals["downgrades"] == 0
+    assert totals.downgrades == 0
 
 
 def test_downgrade_detection(tmp_path):
@@ -273,21 +266,21 @@ def test_downgrade_detection(tmp_path):
     old_p, new_p = write(tmp_path, "o.json", old), write(tmp_path, "n.json", new)
 
     added, removed, changed, licenses, _ = diff(load_components(old_p), load_components(new_p))
-    assert counts(added, removed, changed, licenses)["downgrades"] == 1
+    assert counts(added, removed, changed, licenses).downgrades == 1
     assert main([old_p, new_p, "--fail-on-downgrade"]) == 1
     assert main([old_p, new_p]) == 0
 
 
 def test_policy_thresholds_are_opt_in():
-    totals = {
-        "added": 5,
-        "added_direct": 2,
-        "added_transitive": 3,
-        "removed": 0,
-        "changed": 0,
-        "license_changed": 1,
-        "downgrades": 1,
-    }
+    totals = Counts(
+        added=5,
+        added_direct=2,
+        added_transitive=3,
+        removed=0,
+        changed=0,
+        license_changed=1,
+        downgrades=1,
+    )
     assert policy_failures({}, {}, totals, {}) == []
 
     fails = policy_failures(
@@ -324,3 +317,22 @@ def test_json_output_carries_counts_and_markdown(sboms, capsys):
     assert payload["counts"]["added"] == 1
     assert payload["markdown"].startswith("# SBOM diff")
     assert payload["summary"] in payload["markdown"]
+
+
+def test_unusable_input_exits_by_kind_not_as_a_gate(tmp_path, capsys):
+    # A broken SBOM is not a gate tripping, so it must not exit 1 — and it must
+    # not reach the user as a traceback either.
+    good = write(tmp_path, "good.json", cyclonedx([]))
+    not_json = tmp_path / "not.json"
+    not_json.write_text("<html>404</html>")
+    not_sbom = write(tmp_path, "other.json", {"hello": "world"})
+
+    assert main([str(tmp_path / "absent.json"), good]) == 66
+    assert main([str(not_json), good]) == 65
+    assert main([not_sbom, good]) == 65
+    assert main([str(tmp_path), good]) == 74
+
+    errors = capsys.readouterr().err.splitlines()
+    assert errors[0].endswith("absent.json: no such file")
+    assert "not valid JSON" in errors[1]
+    assert errors[2].endswith("not a recognizable CycloneDX or SPDX JSON SBOM")

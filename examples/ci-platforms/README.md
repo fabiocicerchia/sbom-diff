@@ -102,6 +102,15 @@ reports without ever failing:
 |---|---|
 | `0` | no gate tripped (or no gate configured) |
 | `1` | a gate tripped |
+| `2` | bad command line (argparse) |
+| `65` | an input is not JSON, or is JSON that is not an SBOM |
+| `66` | an input file does not exist |
+| `74` | an input file exists but could not be read |
+| `77` | permission denied reading an input file |
+
+Only `0` and `1` are gate outcomes. The rest say the run never got as far as
+comparing anything, so a job that treats every non-zero exit as "the gate
+tripped" will report a broken SBOM as a dependency problem.
 
 `--max-added-transitive` needs an SBOM carrying a dependency graph (CycloneDX
 `dependencies` / SPDX `relationships`). Without one every component reports as
