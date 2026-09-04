@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/fabiocicerchia/sbom-diff/compare/v1.1.1...v1.1.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* **ci:** pin the editorconfig-checker binary version ([#66](https://github.com/fabiocicerchia/sbom-diff/issues/66)) ([2182040](https://github.com/fabiocicerchia/sbom-diff/commit/2182040f43741223d2a26e0109dd05e5961cabcd))
+* **docs:** link out-of-tree files by URL so --strict passes ([#67](https://github.com/fabiocicerchia/sbom-diff/issues/67)) ([95351b0](https://github.com/fabiocicerchia/sbom-diff/commit/95351b07c28b9a8d2583dd325648e3561884a0a6))
+
 ## [1.1.1](https://github.com/fabiocicerchia/sbom-diff/compare/v1.1.0...v1.1.1) (2026-08-29)
 
 
