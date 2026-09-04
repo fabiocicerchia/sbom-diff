@@ -54,7 +54,7 @@ version — two copies coexisting in a tree is not a version change.
 Only `0` and `1` are gate outcomes; an unusable input exits with its own
 sysexits code (65/66/74/77) so a broken SBOM is not read as a dependency
 problem. The full table is in
-[`examples/ci-platforms/README.md`](../examples/ci-platforms/README.md).
+[`examples/ci-platforms/README.md`](https://github.com/fabiocicerchia/sbom-diff/blob/main/examples/ci-platforms/README.md).
 
 ## Decisions
 
