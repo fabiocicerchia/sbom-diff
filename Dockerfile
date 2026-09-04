@@ -7,10 +7,14 @@ FROM python:3.14-alpine@sha256:c6ead215bfd31f1e433d968853b7a769989117115b7288748
 
 WORKDIR /app
 COPY . .
-# Build a wheel first, then install that: a bare `pip install .` is an
-# unpinned install as far as Scorecard is concerned, a named wheel is not.
-RUN pip wheel --no-cache-dir --no-deps -w /tmp/wheel . \
-    && pip install --no-cache-dir /tmp/wheel/*.whl \
+# The build backend comes from a hash-pinned lockfile and isolation is off, so
+# building the wheel fetches nothing. `pip wheel` on its own would still be
+# reported as pinned while PEP 517 isolation quietly downloaded setuptools
+# from PyPI -- Scorecard cannot see inside pip, which makes that a silenced
+# finding rather than a pinned build.
+RUN pip install --no-cache-dir --require-hashes -r requirements-build.txt \
+    && pip wheel --no-cache-dir --no-build-isolation --no-deps -w /tmp/wheel . \
+    && pip install --no-cache-dir --no-deps /tmp/wheel/*.whl \
     && rm -rf /tmp/wheel \
     && adduser -D -u 10001 app
 USER app
