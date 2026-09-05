@@ -2,16 +2,15 @@
 
 from dataclasses import dataclass
 
+from sbom_diff_lib.types import Components, Pairs, Vulnerabilities
 from sbom_diff_lib.versions import is_downgrade
 
 
-def _added_removed(old, new):
-    return {k: new[k] for k in new.keys() - old.keys()}, {
-        k: old[k] for k in old.keys() - new.keys()
-    }
+def _added_removed(old: Components, new: Components) -> tuple[Components, Components]:
+    return {k: new[k] for k in new.keys() - old.keys()}, {k: old[k] for k in old.keys() - new.keys()}
 
 
-def diff(old, new):
+def diff(old: Components, new: Components) -> tuple[Components, Components, Pairs, Pairs, Pairs]:
     added, removed = _added_removed(old, new)
     common = old.keys() & new.keys()
     # Same purl identity but a different SBOM "name" -> a rename, reported
@@ -30,17 +29,17 @@ def diff(old, new):
     return added, removed, changed, license_changes, renamed
 
 
-def diff_vulnerabilities(old, new):
+def diff_vulnerabilities(
+    old: Vulnerabilities, new: Vulnerabilities
+) -> tuple[Vulnerabilities, Vulnerabilities, dict[str, tuple[str, str]]]:
     added, removed = _added_removed(old, new)
     changed = {
-        k: (old[k]["state"], new[k]["state"])
-        for k in old.keys() & new.keys()
-        if old[k]["state"] != new[k]["state"]
+        k: (old[k]["state"], new[k]["state"]) for k in old.keys() & new.keys() if old[k]["state"] != new[k]["state"]
     }
     return added, removed, changed
 
 
-def transitive_count(added):
+def transitive_count(added: Components) -> int:
     """How many added components the document does not name as direct.
 
     One definition, because three numbers have to agree: the headline summary,
@@ -49,7 +48,7 @@ def transitive_count(added):
     return sum(1 for c in added.values() if not c.get("direct"))
 
 
-def downgrade_count(changed):
+def downgrade_count(changed: Pairs) -> int:
     """How many changed components moved to a lower version.
 
     Same reason as transitive_count: the summary line and
@@ -75,7 +74,7 @@ class Counts:
     downgrades: int
 
 
-def counts(added, removed, changed, license_changes):
+def counts(added: Components, removed: Components, changed: Pairs, license_changes: Pairs) -> Counts:
     """Count the diff.
 
     The transitive count is the one nobody sees in a pull request diff and

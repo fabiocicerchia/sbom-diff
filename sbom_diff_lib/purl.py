@@ -29,11 +29,11 @@ ECOSYSTEM = {
 }
 
 
-def purl_identity(purl):
+def purl_identity(purl: str) -> str:
     return _PURL_IDENTITY_RE.split(purl, 1)[0]
 
 
-def ecosystem(purl):
+def ecosystem(purl: str) -> str:
     if not purl or not purl.startswith(PURL_PREFIX):
         return "unknown"
     kind = purl[len(PURL_PREFIX) :].split("/", 1)[0].lower()

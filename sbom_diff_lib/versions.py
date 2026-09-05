@@ -3,8 +3,10 @@
 import re
 from itertools import zip_longest
 
+from sbom_diff_lib.types import Component
 
-def split_version(version):
+
+def split_version(version: str) -> tuple[list[int | str], str]:
     """Split a version into its core segments and its pre-release, if any.
 
     The pre-release has to come off before the dots: a suffix makes a version
@@ -21,7 +23,7 @@ def split_version(version):
     return [int(p) if p.isdigit() else p for p in core.split(".")], pre
 
 
-def _compare_core(left, right):
+def _compare_core(left: list[int | str], right: list[int | str]) -> int:
     """Order the dotted core segments; 0 when they are the same version."""
     # A missing segment is zero, so 1.2 and 1.2.0 are the same version.
     for a, b in zip_longest(left, right, fillvalue=0):
@@ -33,7 +35,7 @@ def _compare_core(left, right):
     return 0
 
 
-def _compare_prerelease(left_pre, right_pre):
+def _compare_prerelease(left_pre: str, right_pre: str) -> int:
     """Order two pre-release suffixes; having none sorts above having one."""
     if left_pre == right_pre:
         return 0
@@ -44,7 +46,7 @@ def _compare_prerelease(left_pre, right_pre):
     return -1 if left_pre < right_pre else 1
 
 
-def compare_versions(old, new):
+def compare_versions(old: str, new: str) -> int:
     """Order two versions: -1 if old < new, 1 if old > new, 0 if equal.
 
     Enough of semver to tell an upgrade from a downgrade, falling back to a
@@ -56,7 +58,7 @@ def compare_versions(old, new):
     return _compare_core(left, right) or _compare_prerelease(left_pre, right_pre)
 
 
-def semver_jump(old, new):
+def semver_jump(old: str, new: str) -> str:
     """Classify a version bump: major / minor / patch / other."""
     try:
         o = [int(x) for x in old.lstrip("v").split(".")[:3]]
@@ -72,7 +74,7 @@ def semver_jump(old, new):
     return "patch" if n[2] != o[2] else "other"
 
 
-def is_downgrade(old, new):
+def is_downgrade(old: Component, new: Component) -> bool:
     # compare_versions returns 1 when the first argument is the higher one, so
     # a downgrade is the old version sorting *above* the new one.
     return compare_versions(old["version"], new["version"]) > 0

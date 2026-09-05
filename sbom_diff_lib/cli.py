@@ -17,9 +17,10 @@ from sbom_diff_lib.exits import EXIT_GATE_FAILED, EXIT_OK, SbomError
 from sbom_diff_lib.load import read_sbom
 from sbom_diff_lib.policy import fail_on_verdict, policy_failures
 from sbom_diff_lib.render import explain, json_payload
+from sbom_diff_lib.types import Json
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     """The CLI surface. Every gate is opt-in and every one of them exits 1."""
     p = argparse.ArgumentParser(
         prog="sbom-diff", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -56,7 +57,7 @@ def build_parser():
     return p
 
 
-def policy_from_args(args):
+def policy_from_args(args: argparse.Namespace) -> Json:
     """The gate settings, lifted out of argparse so policy_failures never sees it."""
     return {
         "max_added": args.max_added,
@@ -67,20 +68,20 @@ def policy_from_args(args):
     }
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     try:
         old_comps, old_vulns = read_sbom(args.old)
         new_comps, new_vulns = read_sbom(args.new)
     except SbomError as exc:
-        print(f"sbom-diff: {exc}", file=sys.stderr)
+        print(f"sbom-diff: {exc}", file=sys.stderr)  # noqa: T201 — the tool's output
         return exc.code
 
     changes = diff(old_comps, new_comps)
     added, removed, changed, licenses, renamed = changes
     vulns = diff_vulnerabilities(old_vulns, new_vulns)
-    summary, body = explain(added, removed, changed, licenses, renamed, vulns)
+    summary, body = explain(added, removed, changed, licenses, renamed=renamed, vulns=vulns)
 
     totals = counts(added, removed, changed, licenses)
     # One string, rendered once: --json carries the same markdown stdout prints.
@@ -89,11 +90,11 @@ def main(argv=None):
     if args.json:
         json.dump(json_payload(report, summary, totals, changes, vulns), sys.stdout, indent=2)
     else:
-        print(report)
+        print(report)  # noqa: T201 — the tool's output
 
     fails = policy_failures(added, licenses, totals, policy_from_args(args))
     for reason in fails:
-        print(f"sbom-diff: {reason}", file=sys.stderr)
+        print(f"sbom-diff: {reason}", file=sys.stderr)  # noqa: T201 — the tool's output
 
     if fail_on_verdict(args.fail_on, added, removed, changed, licenses):
         return EXIT_GATE_FAILED

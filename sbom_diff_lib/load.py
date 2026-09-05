@@ -1,6 +1,7 @@
 """Reading an SBOM off disk: format detection, VEX data, and failure to codes."""
 
 import json
+from pathlib import Path
 
 from sbom_diff_lib.exits import (
     EXIT_DATAERR,
@@ -10,16 +11,16 @@ from sbom_diff_lib.exits import (
     SbomError,
 )
 from sbom_diff_lib.normalize import MISSING_FIELD, load_cyclonedx, load_spdx
+from sbom_diff_lib.types import Components, Vulnerabilities
 
 
-def load_components(path):
+def load_components(path: str) -> Components:
     """Return {key: {name, version, ...}} plus license info from either format.
 
     Keyed by PURL identity when the component carries one (rename-aware: the
     same purl matches across a name change), falling back to name otherwise.
     """
-    with open(path) as fh:
-        doc = json.load(fh)
+    doc = json.loads(Path(path).read_text())
 
     if "components" in doc or doc.get("bomFormat") == "CycloneDX":
         return load_cyclonedx(doc)
@@ -28,28 +29,25 @@ def load_components(path):
     raise ValueError(f"{path}: not a recognizable CycloneDX or SPDX JSON SBOM")
 
 
-def load_vulnerabilities(path):
+def load_vulnerabilities(path: str) -> Vulnerabilities:
     """Return {id: {state, severity}} from a CycloneDX doc's embedded VEX data.
 
     No-op (empty dict) for SBOMs without a "vulnerabilities" array, e.g. SPDX
     or a CycloneDX SBOM that wasn't augmented with vulnerability/VEX info.
     """
-    with open(path) as fh:
-        doc = json.load(fh)
+    doc = json.loads(Path(path).read_text())
 
     vulns = {}
     for v in doc.get("vulnerabilities", []) or []:
         analysis = v.get("analysis") or {}
         vulns[v.get("id", MISSING_FIELD)] = {
             "state": analysis.get("state", "unknown"),
-            "severity": next(
-                (r.get("severity") for r in v.get("ratings", []) if r.get("severity")), None
-            ),
+            "severity": next((r.get("severity") for r in v.get("ratings", []) if r.get("severity")), None),
         }
     return vulns
 
 
-def read_sbom(path):
+def read_sbom(path: str) -> tuple[Components, Vulnerabilities]:
     """Return (components, vulnerabilities) for one SBOM, or raise SbomError.
 
     Every expected failure becomes an SbomError so main can print one line and
