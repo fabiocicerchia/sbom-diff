@@ -1,4 +1,4 @@
-.PHONY: help setup install dev lint format test build
+.PHONY: help setup install dev lint format test build run analyze
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -13,8 +13,8 @@ install: ## Install the package
 dev: ## Editable install with dev dependencies
 	pip install -e ".[dev]"
 
-lint: ## Run ruff checks
-	ruff check .
+lint: ## Run the whole gate — every hook, every file
+	pre-commit run --all-files
 
 format: ## Format code with ruff
 	ruff format .
@@ -24,3 +24,9 @@ test: ## Run tests
 
 build: ## Build sdist and wheel
 	python -m build
+
+run: ## Run sbom-diff
+	sbom-diff --help
+
+analyze: ## Type-check the package
+	basedpyright
