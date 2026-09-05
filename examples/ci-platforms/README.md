@@ -32,24 +32,24 @@ one-line installer where the job needs a shell.
 
 ## Files
 
-| Platform | File | Copy it to |
-|---|---|---|
-| GitLab CI | [`gitlab-ci.yml`](gitlab-ci.yml) | `.gitlab-ci.yml` |
-| CircleCI | [`circleci-config.yml`](circleci-config.yml) | `.circleci/config.yml` |
-| Travis CI | [`travis.yml`](travis.yml) | `.travis.yml` |
-| Azure DevOps | [`azure-pipelines.yml`](azure-pipelines.yml) | `azure-pipelines.yml` |
-| AWS CodePipeline | [`buildspec.yml`](buildspec.yml) | `buildspec.yml` (CodeBuild stage) |
-| Devtron | [`devtron-task.sh`](devtron-task.sh) | a Pre-Deployment custom-script task |
-| Northflank | [`northflank-job.json`](northflank-job.json) | `northflank create job manual -f …` |
-| Spacelift | [`spacelift-config.yml`](spacelift-config.yml) | `.spacelift/config.yml` |
-| Jenkins | [`Jenkinsfile`](Jenkinsfile) | `Jenkinsfile` |
-| Bitbucket Pipelines | [`bitbucket-pipelines.yml`](bitbucket-pipelines.yml) | `bitbucket-pipelines.yml` |
-| Google Cloud Build | [`cloudbuild.yaml`](cloudbuild.yaml) | `cloudbuild.yaml` |
-| Tekton | [`tekton.yaml`](tekton.yaml) | `kubectl apply -f` |
-| Argo Workflows | [`argo-workflow.yaml`](argo-workflow.yaml) | `argo submit` |
-| Harness | [`harness-pipeline.yml`](harness-pipeline.yml) | the pipeline's YAML editor |
-| Buildkite | [`buildkite-pipeline.yml`](buildkite-pipeline.yml) | `.buildkite/pipeline.yml` |
-| Drone / Woodpecker | [`drone.yml`](drone.yml) | `.drone.yml` / `.woodpecker.yml` |
+| Platform            | File                                                 | Copy it to                          |
+| ------------------- | ---------------------------------------------------- | ----------------------------------- |
+| GitLab CI           | [`gitlab-ci.yml`](gitlab-ci.yml)                     | `.gitlab-ci.yml`                    |
+| CircleCI            | [`circleci-config.yml`](circleci-config.yml)         | `.circleci/config.yml`              |
+| Travis CI           | [`travis.yml`](travis.yml)                           | `.travis.yml`                       |
+| Azure DevOps        | [`azure-pipelines.yml`](azure-pipelines.yml)         | `azure-pipelines.yml`               |
+| AWS CodePipeline    | [`buildspec.yml`](buildspec.yml)                     | `buildspec.yml` (CodeBuild stage)   |
+| Devtron             | [`devtron-task.sh`](devtron-task.sh)                 | a Pre-Deployment custom-script task |
+| Northflank          | [`northflank-job.json`](northflank-job.json)         | `northflank create job manual -f …` |
+| Spacelift           | [`spacelift-config.yml`](spacelift-config.yml)       | `.spacelift/config.yml`             |
+| Jenkins             | [`Jenkinsfile`](Jenkinsfile)                         | `Jenkinsfile`                       |
+| Bitbucket Pipelines | [`bitbucket-pipelines.yml`](bitbucket-pipelines.yml) | `bitbucket-pipelines.yml`           |
+| Google Cloud Build  | [`cloudbuild.yaml`](cloudbuild.yaml)                 | `cloudbuild.yaml`                   |
+| Tekton              | [`tekton.yaml`](tekton.yaml)                         | `kubectl apply -f`                  |
+| Argo Workflows      | [`argo-workflow.yaml`](argo-workflow.yaml)           | `argo submit`                       |
+| Harness             | [`harness-pipeline.yml`](harness-pipeline.yml)       | the pipeline's YAML editor          |
+| Buildkite           | [`buildkite-pipeline.yml`](buildkite-pipeline.yml)   | `.buildkite/pipeline.yml`           |
+| Drone / Woodpecker  | [`drone.yml`](drone.yml)                             | `.drone.yml` / `.woodpecker.yml`    |
 
 For GitHub Actions use the action itself — see
 [`../github-action/`](../github-action/README.md).
@@ -73,17 +73,17 @@ numbers mean anything. Each platform names the base differently, and each one
 shallow-clones by default, so two things have to be right: **fetch depth** and
 **the ref**.
 
-| Platform | Base ref | Full history |
-|---|---|---|
-| GitLab CI | `$CI_MERGE_REQUEST_DIFF_BASE_SHA` | `GIT_DEPTH: "0"` |
-| CircleCI | none — name the branch yourself | `checkout` is already full |
-| Travis CI | `$TRAVIS_BRANCH` (the *target* on a PR build) | `git: {depth: false}` |
-| Azure DevOps | `$(System.PullRequest.TargetBranch)` (a full `refs/heads/…`) | `fetchDepth: 0` |
-| Jenkins | `$CHANGE_TARGET` (Multibranch PR builds) | configure in the branch source |
-| Bitbucket | `$BITBUCKET_PR_DESTINATION_BRANCH` | `clone: {depth: full}` |
-| Buildkite | `$BUILDKITE_PULL_REQUEST_BASE_BRANCH` | agent clone settings |
-| Drone | `$DRONE_TARGET_BRANCH` | `git fetch` in a step |
-| Harness | `<+codebase.targetBranch>` | full by default |
+| Platform     | Base ref                                                     | Full history                   |
+| ------------ | ------------------------------------------------------------ | ------------------------------ |
+| GitLab CI    | `$CI_MERGE_REQUEST_DIFF_BASE_SHA`                            | `GIT_DEPTH: "0"`               |
+| CircleCI     | none — name the branch yourself                              | `checkout` is already full     |
+| Travis CI    | `$TRAVIS_BRANCH` (the *target* on a PR build)                | `git: {depth: false}`          |
+| Azure DevOps | `$(System.PullRequest.TargetBranch)` (a full `refs/heads/…`) | `fetchDepth: 0`                |
+| Jenkins      | `$CHANGE_TARGET` (Multibranch PR builds)                     | configure in the branch source |
+| Bitbucket    | `$BITBUCKET_PR_DESTINATION_BRANCH`                           | `clone: {depth: full}`         |
+| Buildkite    | `$BUILDKITE_PULL_REQUEST_BASE_BRANCH`                        | agent clone settings           |
+| Drone        | `$DRONE_TARGET_BRANCH`                                       | `git fetch` in a step          |
+| Harness      | `<+codebase.targetBranch>`                                   | full by default                |
 
 `git worktree add` is doing the work in every one of them: it materialises the
 base commit next to the checkout without disturbing it, so syft can scan both
@@ -98,15 +98,15 @@ reports without ever failing:
 `--fail-on {any,major,license}`, `--max-added`, `--max-added-transitive`,
 `--fail-on-downgrade`, `--fail-on-license-change`, `--deny-licenses`.
 
-| exit | meaning |
-|---|---|
-| `0` | no gate tripped (or no gate configured) |
-| `1` | a gate tripped |
-| `2` | bad command line (argparse) |
+| exit | meaning                                              |
+| ---- | ---------------------------------------------------- |
+| `0`  | no gate tripped (or no gate configured)              |
+| `1`  | a gate tripped                                       |
+| `2`  | bad command line (argparse)                          |
 | `65` | an input is not JSON, or is JSON that is not an SBOM |
-| `66` | an input file does not exist |
-| `74` | an input file exists but could not be read |
-| `77` | permission denied reading an input file |
+| `66` | an input file does not exist                         |
+| `74` | an input file exists but could not be read           |
+| `77` | permission denied reading an input file              |
 
 Only `0` and `1` are gate outcomes. The rest say the run never got as far as
 comparing anything, so a job that treats every non-zero exit as "the gate
