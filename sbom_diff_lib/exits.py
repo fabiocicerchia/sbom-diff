@@ -14,6 +14,6 @@ EXIT_NOPERM = 77  # EX_NOPERM: permission denied
 class SbomError(Exception):
     """An input the tool cannot use, carrying the exit code that reports it."""
 
-    def __init__(self, message, code):
+    def __init__(self, message: str, code: int) -> None:
         super().__init__(message)
         self.code = code

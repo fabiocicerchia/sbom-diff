@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -10,18 +11,18 @@ from sbom_diff_lib.purl import ecosystem, purl_identity
 from sbom_diff_lib.versions import compare_versions, semver_jump
 
 
-def cyclonedx(components):
+def cyclonedx(components: list[dict[str, object]]) -> dict[str, object]:
     return {"bomFormat": "CycloneDX", "specVersion": "1.5", "components": components}
 
 
-def write(tmp_path, name, doc):
+def write(tmp_path: Path, name: str, doc: dict[str, object]) -> str:
     p = tmp_path / name
     p.write_text(json.dumps(doc))
     return str(p)
 
 
 @pytest.fixture
-def sboms(tmp_path):
+def sboms(tmp_path: Path) -> tuple[str, str]:
     old = cyclonedx(
         [
             {
@@ -41,48 +42,48 @@ def sboms(tmp_path):
     return write(tmp_path, "old.json", old), write(tmp_path, "new.json", new)
 
 
-def test_semver_classification():
+def test_semver_classification() -> None:
     assert semver_jump("1.2.3", "2.0.0") == "major"
     assert semver_jump("1.2.3", "1.3.0") == "minor"
     assert semver_jump("v1.2.3", "v1.2.4") == "patch"
     assert semver_jump("abc", "def") == "other"
 
 
-def test_diff_finds_all_change_kinds(sboms):
+def test_diff_finds_all_change_kinds(sboms) -> None:
     old, new = sboms
     added, removed, changed, licenses, renamed = diff(load_components(old), load_components(new))
-    assert "requests" in added and "left-pad" in removed
+    assert "requests" in added
+    assert "left-pad" in removed
     assert changed["openssl"][1]["version"] == "4.0.0"
     assert licenses["openssl"][0]["licenses"] == ["Apache-2.0"]
     assert licenses["openssl"][1]["licenses"] == ["GPL-3.0"]
     assert renamed == {}
 
 
-def test_purl_identity():
+def test_purl_identity() -> None:
     assert purl_identity("pkg:pypi/requests@2.31.0") == "pkg:pypi/requests"
     assert purl_identity("pkg:pypi/requests@2.31.0?extra=x") == "pkg:pypi/requests"
     assert purl_identity("pkg:pypi/requests") == "pkg:pypi/requests"
 
 
-def test_purl_matching_is_rename_aware(tmp_path):
+def test_purl_matching_is_rename_aware(tmp_path: Path) -> None:
     # Same purl, different "name" field between scans -> matched as a rename,
     # not add+remove.
-    old = cyclonedx(
-        [{"name": "python-requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}]
-    )
+    old = cyclonedx([{"name": "python-requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}])
     new = cyclonedx([{"name": "requests", "version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}])
     old_path, new_path = write(tmp_path, "old.json", old), write(tmp_path, "new.json", new)
 
-    added, removed, changed, _licenses, renamed = diff(
-        load_components(old_path), load_components(new_path)
-    )
-    assert not added and not removed and not changed
+    added, removed, changed, _licenses, renamed = diff(load_components(old_path), load_components(new_path))
+    assert not added
+    assert not removed
+    assert not changed
     assert len(renamed) == 1
     o, n = next(iter(renamed.values()))
-    assert o["name"] == "python-requests" and n["name"] == "requests"
+    assert o["name"] == "python-requests"
+    assert n["name"] == "requests"
 
 
-def test_vulnerability_delta():
+def test_vulnerability_delta() -> None:
     added, removed, changed = diff_vulnerabilities(
         {
             "CVE-2023-1111": {"state": "affected", "severity": "high"},
@@ -98,7 +99,7 @@ def test_vulnerability_delta():
     assert changed["CVE-2023-2222"] == ("affected", "not_affected")
 
 
-def test_load_vulnerabilities(tmp_path):
+def test_load_vulnerabilities(tmp_path: Path) -> None:
     doc = cyclonedx([])
     doc["vulnerabilities"] = [
         {
@@ -108,29 +109,27 @@ def test_load_vulnerabilities(tmp_path):
         }
     ]
     path = write(tmp_path, "sbom.json", doc)
-    assert load_vulnerabilities(path) == {
-        "CVE-2023-1111": {"state": "affected", "severity": "high"}
-    }
+    assert load_vulnerabilities(path) == {"CVE-2023-1111": {"state": "affected", "severity": "high"}}
 
 
-def test_load_vulnerabilities_absent(sboms):
+def test_load_vulnerabilities_absent(sboms) -> None:
     old, _ = sboms
     assert load_vulnerabilities(old) == {}
 
 
-def test_fail_on_major(sboms):
+def test_fail_on_major(sboms) -> None:
     old, new = sboms
     assert main([old, new, "--fail-on", "major"]) == 1
     assert main([old, old, "--fail-on", "any"]) == 0
 
 
-def test_unrecognized_format(tmp_path):
+def test_unrecognized_format(tmp_path: Path) -> None:
     bad = write(tmp_path, "bad.json", {"hello": "world"})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not a recognizable CycloneDX or SPDX JSON SBOM"):
         load_components(bad)
 
 
-def test_compare_versions_orders_and_handles_prereleases():
+def test_compare_versions_orders_and_handles_prereleases() -> None:
     assert compare_versions("1.2.3", "2.0.0") == -1
     assert compare_versions("2.0.0", "1.9.9") == 1
     # A missing segment is zero.
@@ -142,7 +141,7 @@ def test_compare_versions_orders_and_handles_prereleases():
     assert compare_versions("1.0.0-alpha", "1.0.0-beta") == -1
 
 
-def test_ecosystem_from_purl():
+def test_ecosystem_from_purl() -> None:
     assert ecosystem("pkg:pypi/requests@2.31.0") == "PyPI"
     assert ecosystem("pkg:npm/%40scope/pkg@1.0.0") == "npm"
     # Unknown types pass through rather than being dropped.
@@ -150,7 +149,7 @@ def test_ecosystem_from_purl():
     assert ecosystem(None) == "unknown"
 
 
-def test_direct_vs_transitive_from_dependency_graph(tmp_path):
+def test_direct_vs_transitive_from_dependency_graph(tmp_path: Path) -> None:
     doc = cyclonedx(
         [
             {"bom-ref": "a", "name": "direct-dep", "version": "1.0.0", "purl": "pkg:npm/a@1.0.0"},
@@ -165,13 +164,13 @@ def test_direct_vs_transitive_from_dependency_graph(tmp_path):
     assert comps["pkg:npm/b"]["direct"] is False
 
 
-def test_no_dependency_graph_means_everything_is_transitive(tmp_path):
+def test_no_dependency_graph_means_everything_is_transitive(tmp_path: Path) -> None:
     doc = cyclonedx([{"name": "x", "version": "1.0.0", "purl": "pkg:npm/x@1.0.0"}])
     comps = load_components(write(tmp_path, "sbom.json", doc))
     assert comps["pkg:npm/x"]["direct"] is False
 
 
-def test_root_component_is_not_its_own_dependency(tmp_path):
+def test_root_component_is_not_its_own_dependency(tmp_path: Path) -> None:
     # syft catalogues the scanned project alongside its dependencies, under a
     # different bom-ref from metadata.component — hence the name check too.
     doc = cyclonedx(
@@ -185,7 +184,7 @@ def test_root_component_is_not_its_own_dependency(tmp_path):
     assert list(comps) == ["pkg:npm/dep"]
 
 
-def test_duplicate_component_keeps_the_higher_version(tmp_path):
+def test_duplicate_component_keeps_the_higher_version(tmp_path: Path) -> None:
     # Two copies coexisting in one tree is not a version change.
     doc = cyclonedx(
         [
@@ -202,7 +201,7 @@ def test_duplicate_component_keeps_the_higher_version(tmp_path):
     assert comps["pkg:npm/dup"]["direct"] is True
 
 
-def test_spdx_direct_from_relationships_both_directions(tmp_path):
+def test_spdx_direct_from_relationships_both_directions(tmp_path: Path) -> None:
     doc = {
         "spdxVersion": "SPDX-2.3",
         "name": "my-app",
@@ -249,18 +248,20 @@ def test_spdx_direct_from_relationships_both_directions(tmp_path):
     assert "my-app" not in comps
 
 
-def test_counts_split_added_by_depth_and_spot_downgrades(sboms):
+def test_counts_split_added_by_depth_and_spot_downgrades(sboms) -> None:
     old, new = sboms
     added, removed, changed, licenses, _renamed = diff(load_components(old), load_components(new))
     totals = counts(added, removed, changed, licenses)
-    assert totals.added == 1 and totals.added_transitive == 1
-    assert totals.removed == 1 and totals.changed == 1
+    assert totals.added == 1
+    assert totals.added_transitive == 1
+    assert totals.removed == 1
+    assert totals.changed == 1
     assert totals.license_changed == 1
     # openssl 3.0.1 -> 4.0.0 is an upgrade.
     assert totals.downgrades == 0
 
 
-def test_downgrade_detection(tmp_path):
+def test_downgrade_detection(tmp_path: Path) -> None:
     old = cyclonedx([{"name": "x", "version": "2.0.0", "purl": "pkg:npm/x@2.0.0"}])
     new = cyclonedx([{"name": "x", "version": "1.9.0", "purl": "pkg:npm/x@1.9.0"}])
     old_p, new_p = write(tmp_path, "o.json", old), write(tmp_path, "n.json", new)
@@ -271,7 +272,7 @@ def test_downgrade_detection(tmp_path):
     assert main([old_p, new_p]) == 0
 
 
-def test_policy_thresholds_are_opt_in():
+def test_policy_thresholds_are_opt_in() -> None:
     totals = Counts(
         added=5,
         added_direct=2,
@@ -297,20 +298,19 @@ def test_policy_thresholds_are_opt_in():
     assert len(fails) == 4
 
 
-def test_deny_licenses_matches_added_and_newly_changed():
+def test_deny_licenses_matches_added_and_newly_changed() -> None:
     added = {"a": {"name": "a", "licenses": ["GPL-3.0"]}}
-    license_changes = {
-        "b": ({"name": "b", "licenses": ["MIT"]}, {"name": "b", "licenses": ["AGPL-3.0"]})
-    }
+    license_changes = {"b": ({"name": "b", "licenses": ["MIT"]}, {"name": "b", "licenses": ["AGPL-3.0"]})}
     totals = counts(added, {}, {}, license_changes)
 
     fails = policy_failures(added, license_changes, totals, {"deny_licenses": ["gpl-3.0"]})
-    assert len(fails) == 1 and "a (GPL-3.0)" in fails[0]
+    assert len(fails) == 1
+    assert "a (GPL-3.0)" in fails[0]
     # The pre-change licence must not trigger it; only what the change introduces.
     assert policy_failures(added, license_changes, totals, {"deny_licenses": ["MIT"]}) == []
 
 
-def test_json_output_carries_counts_and_markdown(sboms, capsys):
+def test_json_output_carries_counts_and_markdown(sboms, capsys: pytest.CaptureFixture[str]) -> None:
     old, new = sboms
     main([old, new, "--json"])
     payload = json.loads(capsys.readouterr().out)
@@ -319,7 +319,7 @@ def test_json_output_carries_counts_and_markdown(sboms, capsys):
     assert payload["summary"] in payload["markdown"]
 
 
-def test_unusable_input_exits_by_kind_not_as_a_gate(tmp_path, capsys):
+def test_unusable_input_exits_by_kind_not_as_a_gate(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # A broken SBOM is not a gate tripping, so it must not exit 1 — and it must
     # not reach the user as a traceback either.
     good = write(tmp_path, "good.json", cyclonedx([]))
