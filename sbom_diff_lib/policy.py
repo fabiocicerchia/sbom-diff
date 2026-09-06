@@ -7,7 +7,7 @@ from sbom_diff_lib.versions import semver_jump
 
 def _threshold_failures(totals: Counts, policy: Json) -> list[str]:
     """The count gates, in the order the report lists them."""
-    fails = []
+    fails: list[str] = []
     max_added = policy.get("max_added")
     if max_added is not None and totals.added > max_added:
         fails.append(f"{totals.added} components added, over the limit of {max_added}")
@@ -45,7 +45,9 @@ def policy_failures(added: Components, license_changes: Pairs, totals: Counts, p
     dependency review that gets disabled by default.
     """
     fails = _threshold_failures(totals, policy)
-    hits = _denied_license_hits(added, license_changes, policy.get("deny_licenses"))
+    # A policy with no deny list denies nothing; the helper takes the list
+    # itself rather than the absence of one.
+    hits = _denied_license_hits(added, license_changes, policy.get("deny_licenses") or [])
     if hits:
         fails.append(f"denied licence(s): {', '.join(hits)}")
     return fails

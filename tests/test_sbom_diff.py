@@ -8,6 +8,7 @@ from sbom_diff_lib.compare import Counts, counts, diff, diff_vulnerabilities
 from sbom_diff_lib.load import load_components, load_vulnerabilities
 from sbom_diff_lib.policy import policy_failures
 from sbom_diff_lib.purl import ecosystem, purl_identity
+from sbom_diff_lib.types import Json
 from sbom_diff_lib.versions import compare_versions, semver_jump
 
 
@@ -15,7 +16,7 @@ def cyclonedx(components: list[dict[str, object]]) -> dict[str, object]:
     return {"bomFormat": "CycloneDX", "specVersion": "1.5", "components": components}
 
 
-def write(tmp_path: Path, name: str, doc: dict[str, object]) -> str:
+def write(tmp_path: Path, name: str, doc: Json) -> str:
     p = tmp_path / name
     p.write_text(json.dumps(doc))
     return str(p)
@@ -49,7 +50,7 @@ def test_semver_classification() -> None:
     assert semver_jump("abc", "def") == "other"
 
 
-def test_diff_finds_all_change_kinds(sboms) -> None:
+def test_diff_finds_all_change_kinds(sboms: tuple[str, str]) -> None:
     old, new = sboms
     added, removed, changed, licenses, renamed = diff(load_components(old), load_components(new))
     assert "requests" in added
@@ -112,12 +113,12 @@ def test_load_vulnerabilities(tmp_path: Path) -> None:
     assert load_vulnerabilities(path) == {"CVE-2023-1111": {"state": "affected", "severity": "high"}}
 
 
-def test_load_vulnerabilities_absent(sboms) -> None:
+def test_load_vulnerabilities_absent(sboms: tuple[str, str]) -> None:
     old, _ = sboms
     assert load_vulnerabilities(old) == {}
 
 
-def test_fail_on_major(sboms) -> None:
+def test_fail_on_major(sboms: tuple[str, str]) -> None:
     old, new = sboms
     assert main([old, new, "--fail-on", "major"]) == 1
     assert main([old, old, "--fail-on", "any"]) == 0
@@ -248,7 +249,7 @@ def test_spdx_direct_from_relationships_both_directions(tmp_path: Path) -> None:
     assert "my-app" not in comps
 
 
-def test_counts_split_added_by_depth_and_spot_downgrades(sboms) -> None:
+def test_counts_split_added_by_depth_and_spot_downgrades(sboms: tuple[str, str]) -> None:
     old, new = sboms
     added, removed, changed, licenses, _renamed = diff(load_components(old), load_components(new))
     totals = counts(added, removed, changed, licenses)
@@ -310,7 +311,7 @@ def test_deny_licenses_matches_added_and_newly_changed() -> None:
     assert policy_failures(added, license_changes, totals, {"deny_licenses": ["MIT"]}) == []
 
 
-def test_json_output_carries_counts_and_markdown(sboms, capsys: pytest.CaptureFixture[str]) -> None:
+def test_json_output_carries_counts_and_markdown(sboms: tuple[str, str], capsys: pytest.CaptureFixture[str]) -> None:
     old, new = sboms
     main([old, new, "--json"])
     payload = json.loads(capsys.readouterr().out)

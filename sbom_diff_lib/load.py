@@ -11,7 +11,7 @@ from sbom_diff_lib.exits import (
     SbomError,
 )
 from sbom_diff_lib.normalize import MISSING_FIELD, load_cyclonedx, load_spdx
-from sbom_diff_lib.types import Components, Vulnerabilities
+from sbom_diff_lib.types import Components, Json, Vulnerabilities
 
 
 def load_components(path: str) -> Components:
@@ -37,12 +37,14 @@ def load_vulnerabilities(path: str) -> Vulnerabilities:
     """
     doc = json.loads(Path(path).read_text())
 
-    vulns = {}
-    for v in doc.get("vulnerabilities", []) or []:
-        analysis = v.get("analysis") or {}
+    vulns: Vulnerabilities = {}
+    entries: list[Json] = doc.get("vulnerabilities", []) or []
+    for v in entries:
+        analysis: Json = v.get("analysis") or {}
+        ratings: list[Json] = v.get("ratings", [])
         vulns[v.get("id", MISSING_FIELD)] = {
             "state": analysis.get("state", "unknown"),
-            "severity": next((r.get("severity") for r in v.get("ratings", []) if r.get("severity")), None),
+            "severity": next((r.get("severity") for r in ratings if r.get("severity")), None),
         }
     return vulns
 
