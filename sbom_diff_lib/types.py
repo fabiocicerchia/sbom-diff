@@ -23,3 +23,12 @@ Vulnerabilities = dict[str, Vulnerability]
 # A pair of (old, new) for something present in both documents.
 Pair = tuple[Component, Component]
 Pairs = dict[str, Pair]
+
+# What diff_vulnerabilities returns: the vulnerabilities added, the ones gone,
+# and the VEX state changes for the ones present in both, keyed by id.
+VulnDiff = tuple[Vulnerabilities, Vulnerabilities, dict[str, tuple[str, str]]]
+
+# One version change, ready to render: (name, old version, new version, note).
+Jump = tuple[str, str, str, str]
+# Version changes bucketed by semver jump size ("major", "minor", ...).
+Jumps = dict[str, list[Jump]]

@@ -4,13 +4,13 @@ from collections import defaultdict
 from dataclasses import asdict
 
 from sbom_diff_lib.compare import Counts, downgrade_count, transitive_count
-from sbom_diff_lib.types import Components, Json, Pairs, Vulnerabilities
+from sbom_diff_lib.types import Components, Json, Jumps, Pairs, VulnDiff
 from sbom_diff_lib.versions import is_downgrade, semver_jump
 
 
-def classify_jumps(changed: Pairs) -> dict[str, list[str]]:
+def classify_jumps(changed: Pairs) -> Jumps:
     """Bucket every version change by size, in name order, ready to render."""
-    jumps = defaultdict(list)
+    jumps: Jumps = defaultdict(list)
     for o, n in sorted(changed.values(), key=lambda pair: pair[0]["name"]):
         # A downgrade is flagged wherever it lands: 2.0.0 -> 1.9.0 is classified
         # "major" like any other, and reads as an upgrade unless it is labelled.
@@ -29,9 +29,9 @@ def _render_renamed(renamed: Pairs) -> list[str]:
     return [*lines, ""]
 
 
-def _render_jumps(jumps: dict[str, list[str]]) -> list[str]:
+def _render_jumps(jumps: Jumps) -> list[str]:
     """Major first and bolded, then the calmer buckets in decreasing size."""
-    lines = []
+    lines: list[str] = []
     if jumps["major"]:
         lines.append("## ⚠ Major version jumps (review breaking changes)\n")
         lines += [f"- **{n}**: {o} → {v}{note}" for n, o, v, note in jumps["major"]]
@@ -87,7 +87,7 @@ def _render_license_changes(license_changes: Pairs) -> list[str]:
     )
 
 
-def _render_vulnerabilities(vulns: Vulnerabilities) -> list[str]:
+def _render_vulnerabilities(vulns: VulnDiff | None) -> list[str]:
     """The VEX delta: newly reported, gone, and state changes, in that order."""
     added_v, removed_v, changed_v = vulns or ({}, {}, {})
     if not (added_v or removed_v or changed_v):
@@ -104,9 +104,7 @@ def _render_vulnerabilities(vulns: Vulnerabilities) -> list[str]:
     )
 
 
-def summarize(
-    added: Components, removed: Components, changed: Pairs, renamed: Pairs, jumps: dict[str, list[str]]
-) -> str:
+def summarize(added: Components, removed: Components, changed: Pairs, renamed: Pairs, jumps: Jumps) -> str:
     """The one-line headline that leads the report and the --json payload."""
     total = len(added) + len(removed) + len(changed)
     transitive = transitive_count(added)
@@ -132,7 +130,7 @@ def explain(  # noqa: PLR0913 — the five collections diff() returns, plus vuln
     license_changes: Pairs,
     *,
     renamed: Pairs | None = None,
-    vulns: Vulnerabilities | None = None,
+    vulns: VulnDiff | None = None,
 ) -> tuple[str, str]:
     """Return (headline, markdown body); sections run most to least alarming."""
     renamed = renamed or {}
@@ -154,11 +152,13 @@ def json_payload(
     summary: str,
     totals: Counts,
     changes: tuple[Components, Components, Pairs, Pairs, Pairs],
-    vulns: Vulnerabilities | None,
+    vulns: VulnDiff | None,
 ) -> Json:
     """The --json document. Its shape is a contract; callers read these keys."""
     added, removed, changed, licenses, renamed = changes
-    vuln_added, vuln_removed, vuln_changed = vulns
+    # `--json` always carries the three vulnerability collections, empty when
+    # the documents had no VEX data at all.
+    vuln_added, vuln_removed, vuln_changed = vulns or ({}, {}, {})
     return {
         "summary": summary,
         # The rendered report travels with the numbers so a caller that wants

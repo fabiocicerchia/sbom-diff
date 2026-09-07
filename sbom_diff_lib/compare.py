@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from sbom_diff_lib.types import Components, Pairs, Vulnerabilities
+from sbom_diff_lib.types import Components, Pairs, VulnDiff, Vulnerabilities
 from sbom_diff_lib.versions import is_downgrade
 
 
@@ -29,9 +29,7 @@ def diff(old: Components, new: Components) -> tuple[Components, Components, Pair
     return added, removed, changed, license_changes, renamed
 
 
-def diff_vulnerabilities(
-    old: Vulnerabilities, new: Vulnerabilities
-) -> tuple[Vulnerabilities, Vulnerabilities, dict[str, tuple[str, str]]]:
+def diff_vulnerabilities(old: Vulnerabilities, new: Vulnerabilities) -> VulnDiff:
     added, removed = _added_removed(old, new)
     changed = {
         k: (old[k]["state"], new[k]["state"]) for k in old.keys() & new.keys() if old[k]["state"] != new[k]["state"]
