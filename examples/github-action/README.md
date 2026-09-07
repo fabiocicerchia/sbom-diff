@@ -65,22 +65,22 @@ transitive, and the gate will fire on any addition at all.
 
 ## Inputs
 
-| Input | Default | What it does |
-|---|---|---|
-| `scan-path` | `.` | Path to scan. Ignored when both SBOMs are supplied. |
-| `base-ref` | PR base, then default branch | Ref to diff against. |
-| `base-sbom` / `head-sbom` | — | Pre-generated SBOMs. Skips generation. |
-| `syft-version` | `v1.18.1` | Pinned syft used when generating. |
-| `title` | `SBOM diff` | Heading for the comment and job summary. |
-| `github-token` | `github.token` | Omit to write only the job summary. |
-| `pr-number` | from the event | PR to comment on. |
-| `skip-unchanged` | `true` | No comment when nothing changed. |
-| `fail-on` | — | `any` / `major` / `license`. |
-| `max-added` | — | Fail over N added components. |
-| `max-added-transitive` | — | Fail over N added *transitive* components. |
-| `fail-on-downgrade` | `false` | Fail when a component moves to a lower version. |
-| `fail-on-license-change` | `false` | Fail when an existing component changes license. |
-| `deny-licenses` | — | Comma/newline separated IDs barred from added components. |
+| Input                     | Default                      | What it does                                              |
+| ------------------------- | ---------------------------- | --------------------------------------------------------- |
+| `scan-path`               | `.`                          | Path to scan. Ignored when both SBOMs are supplied.       |
+| `base-ref`                | PR base, then default branch | Ref to diff against.                                      |
+| `base-sbom` / `head-sbom` | —                            | Pre-generated SBOMs. Skips generation.                    |
+| `syft-version`            | `v1.18.1`                    | Pinned syft used when generating.                         |
+| `title`                   | `SBOM diff`                  | Heading for the comment and job summary.                  |
+| `github-token`            | `github.token`               | Omit to write only the job summary.                       |
+| `pr-number`               | from the event               | PR to comment on.                                         |
+| `skip-unchanged`          | `true`                       | No comment when nothing changed.                          |
+| `fail-on`                 | —                            | `any` / `major` / `license`.                              |
+| `max-added`               | —                            | Fail over N added components.                             |
+| `max-added-transitive`    | —                            | Fail over N added *transitive* components.                |
+| `fail-on-downgrade`       | `false`                      | Fail when a component moves to a lower version.           |
+| `fail-on-license-change`  | `false`                      | Fail when an existing component changes license.          |
+| `deny-licenses`           | —                            | Comma/newline separated IDs barred from added components. |
 
 ## Outputs
 
