@@ -1,6 +1,7 @@
 """CycloneDX and SPDX documents normalized into one {key: component} shape."""
 
 from sbom_diff_lib.purl import ecosystem, purl_identity
+from sbom_diff_lib.types import Component, Components, Json
 from sbom_diff_lib.versions import compare_versions
 
 # What an SBOM writes when it has no value for a field we still have to show.
@@ -13,7 +14,7 @@ DEFAULT_COMPONENT_TYPE = "library"
 SPDX_NO_LICENSE = ("NOASSERTION", "NONE")
 
 
-def _insert(comps, key, comp):
+def _insert(comps: Components, key: str, comp: Component) -> None:
     """Keep one entry per identity, preferring the higher version.
 
     A component catalogued twice at the same version is the same component; at
@@ -31,7 +32,7 @@ def _insert(comps, key, comp):
         seen["direct"] = True
 
 
-def _cyclonedx_direct_refs(doc, root_ref):
+def _cyclonedx_direct_refs(doc: Json, root_ref: str | None) -> set[str]:
     """bom-refs the root component depends on, or an empty set without a graph.
 
     The dependency graph, when present, is how "direct" is known. Without it
@@ -40,29 +41,32 @@ def _cyclonedx_direct_refs(doc, root_ref):
     """
     if not root_ref:
         return set()
-    entry = next((d for d in doc.get("dependencies") or [] if d.get("ref") == root_ref), None)
+    dependencies: list[Json] = doc.get("dependencies") or []
+    entry = next((d for d in dependencies if d.get("ref") == root_ref), None)
     return set(entry.get("dependsOn") or []) if entry else set()
 
 
-def _cyclonedx_licenses(component):
+def _cyclonedx_licenses(component: Json) -> list[str]:
     """SPDX ids, free-text names and expressions all flattened to a sorted list."""
-    ids = [
-        lic.get("license", {}).get("id")
-        or lic.get("license", {}).get("name")
-        or lic.get("expression")
-        for lic in component.get("licenses", [])
+    licences: list[Json] = component.get("licenses", [])
+    ids: list[str | None] = [
+        lic.get("license", {}).get("id") or lic.get("license", {}).get("name") or lic.get("expression")
+        for lic in licences
     ]
     return sorted(filter(None, ids))
 
 
-def load_cyclonedx(doc):
+def load_cyclonedx(doc: Json) -> Components:
     """Normalize a CycloneDX document into {key: component}."""
-    root = (doc.get("metadata") or {}).get("component") or {}
-    root_ref, root_name = root.get("bom-ref"), root.get("name")
+    metadata: Json = doc.get("metadata") or {}
+    root: Json = metadata.get("component") or {}
+    root_ref: str | None = root.get("bom-ref")
+    root_name: str | None = root.get("name")
     direct_refs = _cyclonedx_direct_refs(doc, root_ref)
 
-    comps = {}
-    for c in doc.get("components", []):
+    comps: Components = {}
+    components: list[Json] = doc.get("components", [])
+    for c in components:
         # The project is not one of its own dependencies. syft catalogues it
         # under a different bom-ref from metadata.component when scanning a
         # directory, so the name is checked too.
@@ -88,7 +92,7 @@ def load_cyclonedx(doc):
     return comps
 
 
-def _spdx_direct_refs(doc, root_ref):
+def _spdx_direct_refs(doc: Json, root_ref: str | None) -> set[str]:
     """SPDXIDs the root package depends on.
 
     SPDX states the relationship in either direction depending on which tool
@@ -96,39 +100,39 @@ def _spdx_direct_refs(doc, root_ref):
     """
     if not root_ref:
         return set()
-    direct_refs = set()
-    for rel in doc.get("relationships") or []:
+    direct_refs: set[str] = set()
+    relationships: list[Json] = doc.get("relationships") or []
+    for rel in relationships:
         relationship = rel.get("relationshipType")
         if relationship == "DEPENDS_ON" and rel.get("spdxElementId") == root_ref:
-            direct_refs.add(rel.get("relatedSpdxElement"))
+            direct_refs.add(rel["relatedSpdxElement"])
         if relationship == "DEPENDENCY_OF" and rel.get("relatedSpdxElement") == root_ref:
-            direct_refs.add(rel.get("spdxElementId"))
+            direct_refs.add(rel["spdxElementId"])
     return direct_refs
 
 
-def _spdx_purl(package):
+def _spdx_purl(package: Json) -> str | None:
     """The package's purl from its externalRefs, or None when it carries none."""
+    refs: list[Json] = package.get("externalRefs", [])
     return next(
-        (
-            ref.get("referenceLocator")
-            for ref in package.get("externalRefs", [])
-            if ref.get("referenceType") == "purl"
-        ),
+        (ref.get("referenceLocator") for ref in refs if ref.get("referenceType") == "purl"),
         None,
     )
 
 
-def _spdx_root(doc):
+def _spdx_root(doc: Json) -> tuple[str | None, str | None]:
     """(SPDXID, name) of the package the document is about, either possibly None."""
-    root_ref = next(iter(doc.get("documentDescribes") or []), None)
-    root_name = next(
-        (p.get("name") for p in doc.get("packages", []) if p.get("SPDXID") == root_ref),
+    describes: list[str] = doc.get("documentDescribes") or []
+    root_ref: str | None = next(iter(describes), None)
+    packages: list[Json] = doc.get("packages", [])
+    root_name: str | None = next(
+        (p.get("name") for p in packages if p.get("SPDXID") == root_ref),
         doc.get("name"),
     )
     return root_ref, root_name
 
 
-def _spdx_component(pkg, direct_refs):
+def _spdx_component(pkg: Json, direct_refs: set[str]) -> Component:
     """One SPDX package as the normalized component record."""
     lic = pkg.get("licenseConcluded") or pkg.get("licenseDeclared")
     purl = _spdx_purl(pkg)
@@ -143,13 +147,14 @@ def _spdx_component(pkg, direct_refs):
     }
 
 
-def load_spdx(doc):
+def load_spdx(doc: Json) -> Components:
     """Normalize an SPDX document into {key: component}."""
     root_ref, root_name = _spdx_root(doc)
     direct_refs = _spdx_direct_refs(doc, root_ref)
 
-    comps = {}
-    for pkg in doc.get("packages", []):
+    comps: Components = {}
+    spdx_packages: list[Json] = doc.get("packages", [])
+    for pkg in spdx_packages:
         if pkg.get("SPDXID") == root_ref:
             continue  # skip the document/root package
         if root_name and pkg.get("name") == root_name:

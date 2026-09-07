@@ -29,11 +29,16 @@ ECOSYSTEM = {
 }
 
 
-def purl_identity(purl):
+def purl_identity(purl: str) -> str:
     return _PURL_IDENTITY_RE.split(purl, 1)[0]
 
 
-def ecosystem(purl):
+def ecosystem(purl: str | None) -> str:
+    """The package ecosystem a purl names, or "unknown".
+
+    Takes None because a component without a purl is the common case in an
+    SBOM, and "unknown" is the honest answer for one.
+    """
     if not purl or not purl.startswith(PURL_PREFIX):
         return "unknown"
     kind = purl[len(PURL_PREFIX) :].split("/", 1)[0].lower()
