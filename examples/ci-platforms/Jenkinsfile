@@ -21,8 +21,8 @@ pipeline {
         sh '''
           set -eu
           apk add --no-cache git curl
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-            | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+          curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" -o /tmp/syft-install.sh
+          sh /tmp/syft-install.sh -b /usr/local/bin "$SYFT_VERSION"
         '''
       }
     }

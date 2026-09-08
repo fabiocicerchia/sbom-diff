@@ -26,8 +26,9 @@ sbom-diff:
     GIT_DEPTH: "0"
   before_script:
     - apk add --no-cache git curl
-    - curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh
-      | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+    - curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh"
+      -o /tmp/syft-install.sh
+    - sh /tmp/syft-install.sh -b /usr/local/bin "$SYFT_VERSION"
   script:
     # Head side: the merge request's code, as checked out.
     - syft -q -o cyclonedx-json=head.json dir:.

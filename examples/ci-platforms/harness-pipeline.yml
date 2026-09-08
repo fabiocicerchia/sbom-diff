@@ -39,8 +39,8 @@ pipeline:
                     command: |-
                       set -euo pipefail
                       apk add --no-cache git curl
-                      curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-                        | sh -s -- -b /usr/local/bin "$SYFT_VERSION"
+                      curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" -o /tmp/syft-install.sh
+                      sh /tmp/syft-install.sh -b /usr/local/bin "$SYFT_VERSION"
                       syft -q -o cyclonedx-json=head.json dir:.
                       git fetch --no-tags origin "$BASE_BRANCH"
                       git worktree add /tmp/base "origin/$BASE_BRANCH"

@@ -125,8 +125,11 @@ runs:
         work="$(mktemp -d)"
         echo "SBOM_DIFF_WORK=$work" >> "$GITHUB_ENV"
 
-        curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-          | sh -s -- -b "$work/bin" "$SYFT_VERSION"
+        # Pinned to the same tag as the binary, and downloaded before it is
+        # run: a moving ref means an unreviewed script, and a piped one runs
+        # whatever arrived before the connection dropped.
+        curl -fsSL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" -o "$work/syft-install.sh"
+        sh "$work/syft-install.sh" -b "$work/bin" "$SYFT_VERSION"
 
         "$work/bin/syft" scan "dir:$SCAN_PATH" -o cyclonedx-json="$work/head.json" -q
 
