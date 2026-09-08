@@ -130,6 +130,25 @@ def test_unrecognized_format(tmp_path: Path) -> None:
         load_components(bad)
 
 
+def test_null_components_is_an_empty_scan_only_inside_a_real_cyclonedx_doc(tmp_path: Path) -> None:
+    """`"components": null` is what a scanner writes for an empty scan. Inside a
+    CycloneDX document that is zero components; on its own it is a fragment, and
+    reading it as "nothing changed" is how a truncated file passes a gate."""
+    empty_scan = write(tmp_path, "empty-scan.json", {**cyclonedx([]), "components": None})
+    assert load_components(empty_scan) == {}
+
+    fragment = write(tmp_path, "fragment.json", {"components": None})
+    with pytest.raises(ValueError, match="not a recognizable CycloneDX or SPDX JSON SBOM"):
+        load_components(fragment)
+
+
+def test_deeply_nested_json_is_an_input_error_not_a_recursion_crash(tmp_path: Path) -> None:
+    deep = tmp_path / "deep.json"
+    deep.write_text("[" * 10_000 + "]" * 10_000)
+    good = write(tmp_path, "good.json", cyclonedx([]))
+    assert main([str(deep), good]) == 65
+
+
 def test_compare_versions_orders_and_handles_prereleases() -> None:
     assert compare_versions("1.2.3", "2.0.0") == -1
     assert compare_versions("2.0.0", "1.9.9") == 1

@@ -65,7 +65,9 @@ def load_cyclonedx(doc: Json) -> Components:
     direct_refs = _cyclonedx_direct_refs(doc, root_ref)
 
     comps: Components = {}
-    components: list[Json] = doc.get("components", [])
+    # `or []`, not a default: `"components": null` is what a scanner writes for
+    # an empty scan, and it is valid CycloneDX. `.get(k, [])` returns the None.
+    components: list[Json] = doc.get("components") or []
     for c in components:
         # The project is not one of its own dependencies. syft catalogues it
         # under a different bom-ref from metadata.component when scanning a
@@ -124,7 +126,7 @@ def _spdx_root(doc: Json) -> tuple[str | None, str | None]:
     """(SPDXID, name) of the package the document is about, either possibly None."""
     describes: list[str] = doc.get("documentDescribes") or []
     root_ref: str | None = next(iter(describes), None)
-    packages: list[Json] = doc.get("packages", [])
+    packages: list[Json] = doc.get("packages") or []
     root_name: str | None = next(
         (p.get("name") for p in packages if p.get("SPDXID") == root_ref),
         doc.get("name"),
@@ -153,7 +155,7 @@ def load_spdx(doc: Json) -> Components:
     direct_refs = _spdx_direct_refs(doc, root_ref)
 
     comps: Components = {}
-    spdx_packages: list[Json] = doc.get("packages", [])
+    spdx_packages: list[Json] = doc.get("packages") or []
     for pkg in spdx_packages:
         if pkg.get("SPDXID") == root_ref:
             continue  # skip the document/root package
