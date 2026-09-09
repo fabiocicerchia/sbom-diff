@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 
 from sbom_diff_lib.exits import (
     EXIT_DATAERR,
@@ -20,9 +21,18 @@ def load_components(path: str) -> Components:
     Keyed by PURL identity when the component carries one (rename-aware: the
     same purl matches across a name change), falling back to name otherwise.
     """
-    doc = json.loads(Path(path).read_text())
+    parsed = json.loads(Path(path).read_text())
+    # Valid JSON that is not an object (a bare array, a string) is not an SBOM
+    # either; it reaches the same "not recognizable" error rather than an
+    # AttributeError on the first .get below.
+    doc: Json = cast(Json, parsed) if isinstance(parsed, dict) else {}
 
-    if "components" in doc or doc.get("bomFormat") == "CycloneDX":
+    # A *list* under "components", or a document that says it is CycloneDX.
+    # `"components": null` is what several scanners write for an empty scan, and
+    # inside a real CycloneDX document it means exactly that — but on its own it
+    # is a fragment, not an SBOM, and calling that "no dependency changes" is
+    # how a truncated file passes a gate.
+    if isinstance(doc.get("components"), list) or doc.get("bomFormat") == "CycloneDX":
         return load_cyclonedx(doc)
     if "spdxVersion" in doc:
         return load_spdx(doc)
@@ -66,5 +76,11 @@ def read_sbom(path: str) -> tuple[Components, Vulnerabilities]:
         raise SbomError(f"{path}: {exc.strerror}", EXIT_IOERR) from None
     except json.JSONDecodeError as exc:
         raise SbomError(f"{path}: not valid JSON: {exc}", EXIT_DATAERR) from None
+    except RecursionError:
+        # json recurses once per level of nesting, so a file that is nothing but
+        # 10k open brackets exhausts the stack before any of it is an SBOM. That
+        # is a cheap denial of service against anything ingesting a build's
+        # output, and it arrives here as a crash rather than an input error.
+        raise SbomError(f"{path}: nested too deeply to parse", EXIT_DATAERR) from None
     except ValueError as exc:
         raise SbomError(str(exc), EXIT_DATAERR) from None
