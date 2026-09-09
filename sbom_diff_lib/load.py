@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 
 from sbom_diff_lib.exits import (
     EXIT_DATAERR,
@@ -24,7 +25,7 @@ def load_components(path: str) -> Components:
     # Valid JSON that is not an object (a bare array, a string) is not an SBOM
     # either; it reaches the same "not recognizable" error rather than an
     # AttributeError on the first .get below.
-    doc: Json = parsed if isinstance(parsed, dict) else {}
+    doc: Json = cast(Json, parsed) if isinstance(parsed, dict) else {}
 
     # A *list* under "components", or a document that says it is CycloneDX.
     # `"components": null` is what several scanners write for an empty scan, and
