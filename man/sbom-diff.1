@@ -1,0 +1,73 @@
+.TH SBOM\-DIFF 1 "2026-09" "sbom-diff" "User Commands"
+.SH NAME
+sbom-diff \- diff two SBOMs and explain the changes in plain language
+.SH SYNOPSIS
+.B sbom-diff
+.I OLD
+.I NEW
+.RI [ options ]
+.SH DESCRIPTION
+Compares two SBOMs \(em CycloneDX JSON or SPDX JSON, as produced by syft,
+trivy and others \(em and reports what was added, removed, upgraded,
+downgraded or relicensed.
+.PP
+The gates are separate flags rather than one severity: a transitive
+dependency appearing and a licence changing are different risks, and a
+pipeline usually wants to fail on one and not the other.
+.SH OPTIONS
+.TP
+.B \-\-json
+Machine-readable output.
+.TP
+.BI \-\-fail\-on " WHAT"
+Exit 1 on
+.BR any
+change,
+.B major
+bumps, or
+.B license
+changes.
+.TP
+.BI \-\-max\-added " N"
+Exit 1 if more than N components are added.
+.TP
+.BI \-\-max\-added\-transitive " N"
+Exit 1 if more than N
+.I transitive
+components are added.
+.TP
+.B \-\-fail\-on\-downgrade
+Exit 1 when a component moves to a lower version.
+.TP
+.B \-\-fail\-on\-license\-change
+Exit 1 when an existing component changes licence.
+.TP
+.BI \-\-deny\-licenses " LIST"
+Comma- or newline-separated licence identifiers that must not appear on an
+added component.
+.SH EXIT STATUS
+.TP
+.B 0
+No gate was breached.
+.TP
+.B 1
+A gate was breached.
+.SH EXAMPLES
+.PP
+Diff two syft SBOMs:
+.PP
+.RS
+.B sbom-diff old.json new.json
+.RE
+.PP
+Gate a release on licences and transitive growth:
+.PP
+.RS
+.B sbom-diff old.json new.json \-\-fail\-on\-license\-change \-\-max\-added\-transitive 5
+.RE
+.SH SEE ALSO
+.BR syft (1),
+.BR trivy (1),
+.BR scan-image (1).
+Project documentation:
+https://github.com/fabiocicerchia/sbom-diff
