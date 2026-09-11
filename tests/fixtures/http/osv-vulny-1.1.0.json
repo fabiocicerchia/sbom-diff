@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "url": "https://api.osv.dev/v1/query",
+  "status": 200,
+  "response": {
+    "vulns": [
+      {
+        "id": "GHSA-1234-5678-9abc",
+        "summary": "Prototype pollution in vulny",
+        "database_specific": {
+          "severity": "HIGH"
+        }
+      }
+    ]
+  },
+  "request": {
+    "version": "1.1.0",
+    "package": {
+      "name": "vulny",
+      "ecosystem": "npm"
+    }
+  }
+}

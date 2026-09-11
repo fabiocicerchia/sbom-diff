@@ -1,0 +1,20 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "the-app",
+      "bom-ref": "root"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "pytool",
+      "version": "1.0",
+      "bom-ref": "pytool@1.0",
+      "purl": "pkg:pypi/pytool@1.0"
+    }
+  ]
+}

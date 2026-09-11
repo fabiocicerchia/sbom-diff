@@ -1,0 +1,45 @@
+{
+  "method": "GET",
+  "url": "https://registry.npmjs.org/sparkle",
+  "status": 200,
+  "response": {
+    "name": "sparkle",
+    "versions": {
+      "1.0.0": {
+        "version": "1.0.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      },
+      "1.1.0": {
+        "version": "1.1.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          },
+          {
+            "name": "mallory"
+          }
+        ],
+        "dist": {}
+      }
+    },
+    "time": {
+      "1.0.0": "2023-02-01T10:00:00.000Z",
+      "1.1.0": "2023-09-01T10:00:00.000Z"
+    },
+    "maintainers": [
+      {
+        "name": "alice"
+      },
+      {
+        "name": "mallory"
+      }
+    ]
+  }
+}

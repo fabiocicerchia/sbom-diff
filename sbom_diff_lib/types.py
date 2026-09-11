@@ -24,6 +24,10 @@ Vulnerabilities = dict[str, Vulnerability]
 Pair = tuple[Component, Component]
 Pairs = dict[str, Pair]
 
+# What diff() returns, in order: added, removed, changed, license changes,
+# renamed. Passed around as one value because every consumer wants all five.
+Changes = tuple[Components, Components, Pairs, Pairs, Pairs]
+
 # What diff_vulnerabilities returns: the vulnerabilities added, the ones gone,
 # and the VEX state changes for the ones present in both, keyed by id.
 VulnDiff = tuple[Vulnerabilities, Vulnerabilities, dict[str, tuple[str, str]]]

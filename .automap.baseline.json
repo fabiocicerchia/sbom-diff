@@ -8,7 +8,7 @@
     "sbom_diff_lib": {
       "fan_in": 1,
       "fan_out": 0,
-      "modules": 10
+      "modules": 20
     }
   },
   "cycles": [],

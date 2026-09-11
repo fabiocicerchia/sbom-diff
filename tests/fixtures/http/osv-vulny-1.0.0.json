@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "url": "https://api.osv.dev/v1/query",
+  "status": 200,
+  "response": {},
+  "request": {
+    "version": "1.0.0",
+    "package": {
+      "name": "vulny",
+      "ecosystem": "npm"
+    }
+  }
+}

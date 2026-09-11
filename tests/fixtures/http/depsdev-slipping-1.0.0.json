@@ -1,0 +1,15 @@
+{
+  "method": "GET",
+  "url": "https://api.deps.dev/v3/systems/npm/packages/slipping/versions/1.0.0",
+  "status": 200,
+  "response": {
+    "relatedProjects": [
+      {
+        "projectKey": {
+          "id": "github.com/old/slipping"
+        },
+        "relationType": "SOURCE_REPO"
+      }
+    ]
+  }
+}

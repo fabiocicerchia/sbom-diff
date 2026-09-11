@@ -1,6 +1,7 @@
 """Package URLs: the identity two SBOMs are matched on, and the ecosystem name."""
 
 import re
+from urllib.parse import unquote
 
 # Every purl starts with this scheme; the type follows it directly.
 PURL_PREFIX = "pkg:"
@@ -43,3 +44,23 @@ def ecosystem(purl: str | None) -> str:
         return "unknown"
     kind = purl[len(PURL_PREFIX) :].split("/", 1)[0].lower()
     return ECOSYSTEM.get(kind, kind)
+
+
+def purl_name(purl: str | None) -> str | None:
+    """The package name a purl carries, namespace included, or None.
+
+    This is the name a registry answers to, which is not always the SBOM's
+    `name` field: npm scoped packages are `@scope/name` there and
+    `%40scope/name` here. Both spellings are accepted, because producers write
+    both, and the version/qualifier tail comes off either way.
+    """
+    if not purl or not purl.startswith(PURL_PREFIX):
+        return None
+    path = purl[len(PURL_PREFIX) :].split("?", 1)[0].split("#", 1)[0]
+    if "/" not in path:
+        return None
+    name = unquote(path.split("/", 1)[1])
+    # The version marker is the *last* @: an unencoded scoped name starts with
+    # one, and "@babel/core" is a name, not an empty name at version "babel".
+    at = name.rfind("@")
+    return (name[:at] if at > 0 else name) or None

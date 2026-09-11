@@ -1,0 +1,27 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "the-app",
+      "bom-ref": "root"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "widget",
+      "version": "1.0.1",
+      "bom-ref": "widget@1.0.1",
+      "purl": "pkg:npm/widget@1.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -31,6 +31,37 @@ sbom-diff old.json new.json --deny-licenses 'AGPL-3.0,GPL-3.0'
 
 See [`../examples/basic/`](../examples/basic/) for a runnable pair of SBOMs.
 
+## Ranking what to read
+
+The diff says what changed; `--review` says which of it to read first. It
+scores every added and updated component against ten independent signals and
+sorts them into **read this / glance / routine**, printing the scoring rule in
+the report so you can disagree with it.
+
+```sh
+sbom-diff old.json new.json --review                      # score and rank
+sbom-diff old.json new.json --review --offline            # SBOMs only, no network
+sbom-diff old.json new.json --review --fail-on-tier read  # CI gate on the tier
+sbom-diff --list-signals                                  # every signal, its points, its source
+```
+
+The signals that need somebody else's API — OSV for advisories, the npm and
+PyPI registries for install scripts, maintainers and publish dates, deps.dev
+for OpenSSF Scorecard — are cached under `$XDG_CACHE_HOME/sbom-diff` for a day
+(`--cache-dir`, `--cache-ttl`, `--no-cache`), spaced out per host, and capped
+at `--max-requests` per run. A signal that could not be answered for an
+ecosystem is reported as *not checkable*, never as clean.
+
+Turn any of them off — the report rescores without it and says it was
+disabled:
+
+```sh
+sbom-diff old.json new.json --review --disable-signal scorecard,fanout
+```
+
+See [`../examples/review/`](../examples/review/) for a runnable pair that
+trips several signals offline.
+
 ## Other CI systems
 
 The composite action is GitHub-specific; the CLI is not. It is stdlib-only

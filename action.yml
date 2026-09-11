@@ -70,6 +70,26 @@ inputs:
     description: 'Comma or newline separated license IDs that must not appear on an added component.'
     required: false
     default: ''
+  review:
+    description: >-
+      Score added and updated components against the signals and rank them
+      into tiers (read this / glance / routine) in the comment.
+    required: false
+    default: 'false'
+  review-offline:
+    description: >-
+      Score the review from the SBOMs alone. Every signal needing a network
+      source is reported as skipped rather than checked.
+    required: false
+    default: 'false'
+  disable-signals:
+    description: 'Comma separated signal ids to leave out of the review (see --list-signals).'
+    required: false
+    default: ''
+  fail-on-tier:
+    description: 'Fail when any component lands in this tier or a louder one: read | glance | routine.'
+    required: false
+    default: ''
 
 outputs:
   summary:
@@ -90,6 +110,12 @@ outputs:
   license-changed:
     description: 'Number of components whose license changed'
     value: ${{ steps.diff.outputs.license-changed }}
+  read-this:
+    description: 'Number of components the review put in the "read this" tier (0 without review)'
+    value: ${{ steps.diff.outputs.read-this }}
+  glance:
+    description: 'Number of components the review put in the "glance" tier (0 without review)'
+    value: ${{ steps.diff.outputs.glance }}
   markdown:
     description: 'The rendered report, JSON-encoded so it survives being an output'
     value: ${{ steps.diff.outputs.markdown }}
@@ -162,6 +188,10 @@ runs:
         FAIL_ON_DOWNGRADE: ${{ inputs.fail-on-downgrade }}
         FAIL_ON_LICENSE_CHANGE: ${{ inputs.fail-on-license-change }}
         DENY_LICENSES: ${{ inputs.deny-licenses }}
+        REVIEW: ${{ inputs.review }}
+        REVIEW_OFFLINE: ${{ inputs.review-offline }}
+        DISABLE_SIGNALS: ${{ inputs.disable-signals }}
+        FAIL_ON_TIER: ${{ inputs.fail-on-tier }}
       run: |
         set +e
         base="${BASE_SBOM:-$SBOM_DIFF_WORK/base.json}"
@@ -174,6 +204,10 @@ runs:
         [ "$FAIL_ON_DOWNGRADE" = "true" ] && args+=(--fail-on-downgrade)
         [ "$FAIL_ON_LICENSE_CHANGE" = "true" ] && args+=(--fail-on-license-change)
         [ -n "$DENY_LICENSES" ] && args+=(--deny-licenses "$DENY_LICENSES")
+        [ "$REVIEW" = "true" ] && args+=(--review)
+        [ "$REVIEW_OFFLINE" = "true" ] && args+=(--offline)
+        [ -n "$DISABLE_SIGNALS" ] && args+=(--disable-signal "$DISABLE_SIGNALS")
+        [ -n "$FAIL_ON_TIER" ] && args+=(--fail-on-tier "$FAIL_ON_TIER")
 
         sbom-diff "${args[@]}" > sbom-diff-result.json
         echo "exit_code=$?" >> "$GITHUB_OUTPUT"
@@ -191,6 +225,12 @@ runs:
           echo "removed=$(jq -r .counts.removed sbom-diff-result.json)"
           echo "changed=$(jq -r .counts.changed sbom-diff-result.json)"
           echo "license-changed=$(jq -r .counts.license_changed sbom-diff-result.json)"
+          # `?` and `// 0`: without --review there is no .review object at all,
+          # and an empty step output reads as a failure to whoever consumes it.
+          echo "read-this=$(jq -r '[.review.tiers[]? | select(.id == "read") | .count] | first // 0' \
+            sbom-diff-result.json)"
+          echo "glance=$(jq -r '[.review.tiers[]? | select(.id == "glance") | .count] | first // 0' \
+            sbom-diff-result.json)"
           echo "markdown=$(jq -Rs . < sbom-diff-output.md)"
           echo "unchanged=$(jq -r '[.counts.added, .counts.removed, .counts.changed] | add == 0' \
             sbom-diff-result.json)"

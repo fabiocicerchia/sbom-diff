@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "url": "https://api.deps.dev/v3/projects/github.com%2Fold%2Fslipping",
+  "status": 200,
+  "response": {
+    "projectKey": {
+      "id": "github.com/old/slipping"
+    },
+    "scorecard": {
+      "overallScore": 8.1
+    }
+  }
+}

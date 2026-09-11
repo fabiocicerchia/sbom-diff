@@ -1,0 +1,19 @@
+{
+  "method": "GET",
+  "url": "https://pypi.org/pypi/pytool/1.0/json",
+  "status": 200,
+  "response": {
+    "info": {
+      "name": "pytool",
+      "author": "Alice",
+      "author_email": "",
+      "maintainer": "",
+      "maintainer_email": ""
+    },
+    "urls": [
+      {
+        "upload_time_iso_8601": "2022-01-01T00:00:00.000000Z"
+      }
+    ]
+  }
+}
