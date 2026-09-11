@@ -1,0 +1,163 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "shop-frontend",
+      "bom-ref": "shop-frontend@1.0.0",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "chalk",
+      "version": "2.4.2",
+      "bom-ref": "chalk@2.4.2",
+      "purl": "pkg:npm/chalk@2.4.2"
+    },
+    {
+      "type": "library",
+      "name": "lodash",
+      "version": "4.17.20",
+      "bom-ref": "lodash@4.17.20",
+      "purl": "pkg:npm/lodash@4.17.20"
+    },
+    {
+      "type": "library",
+      "name": "internal-toolkit",
+      "version": "1.0.0",
+      "bom-ref": "internal-toolkit@1.0.0",
+      "purl": "pkg:npm/internal-toolkit@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "request",
+      "version": "2.88.2",
+      "bom-ref": "request@2.88.2",
+      "purl": "pkg:npm/request@2.88.2"
+    },
+    {
+      "type": "library",
+      "name": "helper-a",
+      "version": "1.0.0",
+      "bom-ref": "helper-a@1.0.0",
+      "purl": "pkg:npm/helper-a@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-b",
+      "version": "1.0.0",
+      "bom-ref": "helper-b@1.0.0",
+      "purl": "pkg:npm/helper-b@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-c",
+      "version": "1.0.0",
+      "bom-ref": "helper-c@1.0.0",
+      "purl": "pkg:npm/helper-c@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-d",
+      "version": "1.0.0",
+      "bom-ref": "helper-d@1.0.0",
+      "purl": "pkg:npm/helper-d@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-e",
+      "version": "1.0.0",
+      "bom-ref": "helper-e@1.0.0",
+      "purl": "pkg:npm/helper-e@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-f",
+      "version": "1.0.0",
+      "bom-ref": "helper-f@1.0.0",
+      "purl": "pkg:npm/helper-f@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "helper-g",
+      "version": "1.0.0",
+      "bom-ref": "helper-g@1.0.0",
+      "purl": "pkg:npm/helper-g@1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "shop-frontend@1.0.0",
+      "dependsOn": [
+        "chalk@2.4.2",
+        "lodash@4.17.20",
+        "internal-toolkit@1.0.0",
+        "request@2.88.2",
+        "helper-a@1.0.0",
+        "helper-b@1.0.0",
+        "helper-c@1.0.0",
+        "helper-d@1.0.0",
+        "helper-e@1.0.0",
+        "helper-f@1.0.0",
+        "helper-g@1.0.0"
+      ]
+    },
+    {
+      "ref": "internal-toolkit@1.0.0",
+      "dependsOn": [
+        "helper-a@1.0.0"
+      ]
+    },
+    {
+      "ref": "chalk@2.4.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "lodash@4.17.20",
+      "dependsOn": []
+    },
+    {
+      "ref": "request@2.88.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-a@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-b@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-c@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-d@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-e@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-f@1.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "helper-g@1.0.0",
+      "dependsOn": []
+    }
+  ]
+}

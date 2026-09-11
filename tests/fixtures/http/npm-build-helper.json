@@ -1,0 +1,44 @@
+{
+  "method": "GET",
+  "url": "https://registry.npmjs.org/build-helper",
+  "status": 200,
+  "response": {
+    "name": "build-helper",
+    "versions": {
+      "1.0.0": {
+        "version": "1.0.0",
+        "scripts": {
+          "test": "jest"
+        },
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      },
+      "2.0.0": {
+        "version": "2.0.0",
+        "scripts": {
+          "test": "jest",
+          "postinstall": "node scripts/collect.js"
+        },
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      }
+    },
+    "time": {
+      "1.0.0": "2024-01-05T10:00:00.000Z",
+      "2.0.0": "2024-06-01T10:00:00.000Z"
+    },
+    "maintainers": [
+      {
+        "name": "alice"
+      }
+    ]
+  }
+}

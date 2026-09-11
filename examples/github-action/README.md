@@ -81,12 +81,38 @@ transitive, and the gate will fire on any addition at all.
 | `fail-on-downgrade`       | `false`                      | Fail when a component moves to a lower version.           |
 | `fail-on-license-change`  | `false`                      | Fail when an existing component changes license.          |
 | `deny-licenses`           | —                            | Comma/newline separated IDs barred from added components. |
+| `review`                  | `false`                      | Score and rank added/updated components in the comment.   |
+| `review-offline`          | `false`                      | Score the review from the SBOMs alone, no network.        |
+| `disable-signals`         | —                            | Comma separated signal ids to leave out of the review.    |
+| `fail-on-tier`            | —                            | Fail on `read` / `glance` / `routine` and louder.         |
+
+## Ranking what to read
+
+`review: 'true'` adds the judgement layer to the comment: every added and
+updated component scored against ten signals — new advisories, an install
+script that was not there before, a maintainer set that changed hands, a
+release published yesterday — sorted into **read this / glance / routine**,
+with the scoring rule folded into the comment so a reviewer can disagree with
+it.
+
+```yaml
+      - uses: fabiocicerchia/sbom-diff@v1
+        with:
+          review: 'true'
+          fail-on-tier: read          # block the PR on the loudest tier only
+          disable-signals: scorecard  # ...and ignore this one entirely
+```
+
+It talks to the npm and PyPI registries, OSV and deps.dev, so the job needs
+egress; `review-offline: 'true'` scores from the two SBOMs alone and says in
+the comment which signals it skipped.
 
 ## Outputs
 
 `summary`, `added`, `added-transitive`, `removed`, `changed`,
-`license-changed`, and `markdown` (JSON-encoded — a raw multi-line body is not
-a legal step output).
+`license-changed`, `read-this`, `glance`, and `markdown` (JSON-encoded — a raw
+multi-line body is not a legal step output). The two tier counts are `0` when
+`review` is off.
 
 ```yaml
       - uses: fabiocicerchia/sbom-diff@v1

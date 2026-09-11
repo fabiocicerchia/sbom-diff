@@ -1,0 +1,39 @@
+{
+  "method": "GET",
+  "url": "https://registry.npmjs.org/fresh-thing",
+  "status": 200,
+  "response": {
+    "name": "fresh-thing",
+    "versions": {
+      "1.0.0": {
+        "version": "1.0.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      },
+      "1.1.0": {
+        "version": "1.1.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      }
+    },
+    "time": {
+      "1.0.0": "2024-05-01T10:00:00.000Z",
+      "1.1.0": "2024-06-10T09:00:00.000Z"
+    },
+    "maintainers": [
+      {
+        "name": "alice"
+      }
+    ]
+  }
+}

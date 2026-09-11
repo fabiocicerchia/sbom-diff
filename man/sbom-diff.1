@@ -45,6 +45,52 @@ Exit 1 when an existing component changes licence.
 .BI \-\-deny\-licenses " LIST"
 Comma- or newline-separated licence identifiers that must not appear on an
 added component.
+.SS Review
+The judgement layer: which of the changes a human should actually read.
+.TP
+.B \-\-review
+Score every added and version-changed component against the signals and rank
+the results into tiers, with the scoring rule printed in the report.
+.TP
+.B \-\-offline
+Score only from the two SBOMs. Every signal that would need a network source
+is reported as skipped, with the reason.
+.TP
+.BI \-\-disable\-signal " ID"
+Turn one signal off. Repeatable, and accepts a comma-separated list.
+.TP
+.B \-\-list\-signals
+Print every signal, its points and its source, then exit.
+.TP
+.BI \-\-fail\-on\-tier " TIER"
+Exit 1 when any component lands in
+.BR read ,
+.BR glance
+or
+.BR routine
+\(em or any louder tier.
+.TP
+.BI \-\-young\-days " N"
+Flag releases published less than N days ago (default 14).
+.TP
+.BI \-\-fanout\-threshold " N"
+Flag a component whose transitive count grew by more than N (default 5).
+.TP
+.BI \-\-scorecard\-drop " POINTS"
+Flag an OpenSSF Scorecard fall larger than this (default 1.0).
+.TP
+.BI \-\-cache\-dir " PATH"
+Where responses are cached. Defaults to
+.IR $XDG_CACHE_HOME/sbom-diff .
+.TP
+.BI \-\-cache\-ttl " SECONDS"
+How long a cached response stays fresh (default 86400).
+.TP
+.B \-\-no\-cache
+Do not read or write the response cache.
+.TP
+.BI \-\-max\-requests " N"
+Stop asking after N requests in one run (default 300, 0 for no limit).
 .SH EXIT STATUS
 .TP
 .B 0
@@ -64,6 +110,12 @@ Gate a release on licences and transitive growth:
 .PP
 .RS
 .B sbom-diff old.json new.json \-\-fail\-on\-license\-change \-\-max\-added\-transitive 5
+.RE
+.PP
+Rank what to read, and fail the build on anything in the loudest tier:
+.PP
+.RS
+.B sbom-diff old.json new.json \-\-review \-\-fail\-on\-tier read
 .RE
 .SH SEE ALSO
 .BR syft (1),

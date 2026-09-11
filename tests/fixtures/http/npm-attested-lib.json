@@ -1,0 +1,43 @@
+{
+  "method": "GET",
+  "url": "https://registry.npmjs.org/attested-lib",
+  "status": 200,
+  "response": {
+    "name": "attested-lib",
+    "versions": {
+      "1.0.0": {
+        "version": "1.0.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/attested-lib@1.0.0"
+          }
+        }
+      },
+      "1.1.0": {
+        "version": "1.1.0",
+        "scripts": {},
+        "maintainers": [
+          {
+            "name": "alice"
+          }
+        ],
+        "dist": {}
+      }
+    },
+    "time": {
+      "1.0.0": "2023-03-01T10:00:00.000Z",
+      "1.1.0": "2023-11-01T10:00:00.000Z"
+    },
+    "maintainers": [
+      {
+        "name": "alice"
+      }
+    ]
+  }
+}
