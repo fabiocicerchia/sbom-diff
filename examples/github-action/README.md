@@ -110,9 +110,9 @@ the comment which signals it skipped.
 ## Outputs
 
 `summary`, `added`, `added-transitive`, `removed`, `changed`,
-`license-changed`, `read-this`, `glance`, and `markdown` (JSON-encoded — a raw
-multi-line body is not a legal step output). The two tier counts are `0` when
-`review` is off.
+`license-changed`, `read-this`, `glance`, `markdown` (JSON-encoded — a raw
+multi-line body is not a legal step output), and `report`, the path to the JSON
+report. The two tier counts are `0` when `review` is off.
 
 ```yaml
       - uses: fabiocicerchia/sbom-diff@v1

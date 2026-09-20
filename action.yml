@@ -119,6 +119,9 @@ outputs:
   markdown:
     description: 'The rendered report, JSON-encoded so it survives being an output'
     value: ${{ steps.diff.outputs.markdown }}
+  report:
+    description: 'Path to the JSON report, relative to the workspace.'
+    value: ${{ steps.diff.outputs.report }}
 
 runs:
   using: 'composite'
@@ -234,6 +237,7 @@ runs:
           echo "glance=$(jq -r '[.review.tiers[]? | select(.id == "glance") | .count] | first // 0' \
             sbom-diff-result.json)"
           echo "markdown=$(jq -Rs . < sbom-diff-output.md)"
+          echo "report=sbom-diff-result.json"
           echo "unchanged=$(jq -r '[.counts.added, .counts.removed, .counts.changed] | add == 0' \
             sbom-diff-result.json)"
         } >> "$GITHUB_OUTPUT"
