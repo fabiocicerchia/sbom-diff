@@ -162,8 +162,10 @@ runs:
         base="${BASE_REF:-${PR_BASE:-$DEFAULT_BRANCH}}"
         # A shallow clone has no base commit. Fetching it explicitly is cheaper
         # than asking every caller for fetch-depth: 0 and quietly producing a
-        # meaningless diff when they forget.
-        git fetch --no-tags --depth=1 origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null \
+        # meaningless diff when they forget — but only when it is missing: a
+        # fetch with persist-credentials: false asks for a password and dies.
+        git rev-parse --verify --quiet "refs/remotes/origin/$base" >/dev/null \
+          || git fetch --no-tags --depth=1 origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null \
           || git fetch --no-tags origin "$base"
         git worktree add --detach "$work/base" "origin/$base" >/dev/null
 
