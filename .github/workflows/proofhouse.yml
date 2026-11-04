@@ -56,7 +56,8 @@ jobs:
         # POST below. gandalf-pr-review.yml is where findings gate a change.
         continue-on-error: true
         env:
-          GANDALF_IMAGE: ghcr.io/fabiocicerchia/gandalf-tools:0.14.0@sha256:9718f0093ac401082bbe2bd2a4f7241e317e56a759525d6951d646bf644e60e3
+          GANDALF_IMAGE: "ghcr.io/fabiocicerchia/gandalf-tools:0.14.0@\
+            sha256:9718f0093ac401082bbe2bd2a4f7241e317e56a759525d6951d646bf644e60e3"
         run: |
           docker run --rm \
             --user "$(id -u):$(id -g)" -e HOME=/tmp -e PYTHONDONTWRITEBYTECODE=1 \
