@@ -82,16 +82,16 @@ extra:
 # too, or `mkdocs build --strict` aborts on the missing plugin.
 plugins:
   - search
+  # Note: Material's `social` plugin is deliberately NOT enabled — it downloads
+  # a font from fonts.google.com at build time, which breaks this repo's
+  # no-external-requests / reproducible-build stance. Add Open Graph images by
+  # hand if you want them.
   - git-revision-date-localized:
       enable_creation_date: true
       # Fall back to the build date rather than failing when a file has no
       # history yet — a new page, or a clone the workflow shallowed.
       fallback_to_build_date: true
       type: date
-  # Note: Material's `social` plugin is deliberately NOT enabled — it downloads
-  # a font from fonts.google.com at build time, which breaks this repo's
-  # no-external-requests / reproducible-build stance. Add Open Graph images by
-  # hand if you want them.
 
 markdown_extensions:
   - abbr
