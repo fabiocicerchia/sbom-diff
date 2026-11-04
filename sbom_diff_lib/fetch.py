@@ -114,7 +114,7 @@ def urllib_transport(request: Request) -> RawResponse:
         method=request.method,
     )
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 — as above
+        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 # nosec B310 — as above
             return RawResponse(response.status, response.read())
     except urllib.error.HTTPError as exc:
         # A 404 from a registry is an answer ("no such package"), not a
