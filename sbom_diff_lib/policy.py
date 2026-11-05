@@ -1,5 +1,7 @@
 """The CI gates: which changes count as a failure, and why."""
 
+from collections.abc import Callable
+
 from sbom_diff_lib.compare import Counts
 from sbom_diff_lib.types import Components, Json, Pairs
 from sbom_diff_lib.versions import semver_jump
@@ -57,10 +59,15 @@ def fail_on_verdict(
     fail_on: str, added: Components, removed: Components, changed: Pairs, license_changes: Pairs
 ) -> bool:
     """True when --fail-on's chosen class of change is present."""
-    if fail_on == "any":
-        return bool(added or removed or changed)
-    if fail_on == "major":
-        return any(semver_jump(o["version"], n["version"]) == "major" for o, n in changed.values())
-    if fail_on == "license":
-        return bool(license_changes)
-    return False
+    verdict = _FAIL_ON.get(fail_on)
+    return verdict(added, removed, changed, license_changes) if verdict else False
+
+
+# One predicate per --fail-on choice, all taking (added, removed, changed, license_changes).
+_FAIL_ON: dict[str, Callable[[Components, Components, Pairs, Pairs], bool]] = {
+    "any": lambda added, removed, changed, _lic: bool(added or removed or changed),
+    "major": lambda _a, _r, changed, _lic: any(
+        semver_jump(o["version"], n["version"]) == "major" for o, n in changed.values()
+    ),
+    "license": lambda _a, _r, _c, license_changes: bool(license_changes),
+}

@@ -8,6 +8,7 @@ why nobody could check it. "Not checkable" is an answer the report prints; it
 is never silently the same as "clean".
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import cast
@@ -56,20 +57,16 @@ def _unavailable(reason: str, link: str | None = None) -> VersionFacts:
 
 def package_link(ecosystem: str, name: str, version: str) -> str | None:
     """Where a human goes to read the package itself."""
-    if ecosystem == NPM:
-        return f"{NPM_SITE}/{name}/v/{version}"
-    if ecosystem == PYPI:
-        return f"{PYPI_SITE}/{name}/{version}/"
-    return None
+    registry = _REGISTRIES.get(ecosystem)
+    return registry.link.format(name=name, version=version) if registry else None
 
 
 def version_facts(fetcher: Fetcher, ecosystem: str, name: str, version: str) -> VersionFacts:
     """Registry facts for `name@version`, or a note per field saying why not."""
-    if ecosystem == NPM:
-        return _npm_facts(fetcher, name, version)
-    if ecosystem == PYPI:
-        return _pypi_facts(fetcher, name, version)
-    return _unavailable(NO_REGISTRY_NOTE.format(ecosystem=ecosystem))
+    registry = _REGISTRIES.get(ecosystem)
+    if registry is None:
+        return _unavailable(NO_REGISTRY_NOTE.format(ecosystem=ecosystem))
+    return registry.facts(fetcher, name, version)
 
 
 def _npm_facts(fetcher: Fetcher, name: str, version: str) -> VersionFacts:
@@ -154,6 +151,21 @@ def _pypi_facts(fetcher: Fetcher, name: str, version: str) -> VersionFacts:
             **({} if uploads else {"published": "PyPI listed no upload time for this version"}),
         },
     )
+
+
+@dataclass(frozen=True)
+class _Registry:
+    """One registry this tool reads: where its package pages live, and how to ask it."""
+
+    link: str
+    facts: Callable[[Fetcher, str, str], VersionFacts]
+
+
+# A new registry is one entry here plus its facts function; nothing else branches on it.
+_REGISTRIES = {
+    NPM: _Registry(f"{NPM_SITE}/{{name}}/v/{{version}}", _npm_facts),
+    PYPI: _Registry(f"{PYPI_SITE}/{{name}}/{{version}}/", _pypi_facts),
+}
 
 
 def _parse_time(raw: object) -> datetime | None:
