@@ -9,7 +9,7 @@ is never silently the same as "clean".
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import cast
 from urllib.parse import quote
 
@@ -161,8 +161,7 @@ def _parse_time(raw: object) -> datetime | None:
     if not isinstance(raw, str):
         return None
     try:
-        # 3.10's fromisoformat does not take the "Z" that both registries send.
-        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(raw)
     except ValueError:
         return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
