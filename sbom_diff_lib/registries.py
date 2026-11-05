@@ -131,12 +131,8 @@ def _pypi_facts(fetcher: Fetcher, name: str, version: str) -> VersionFacts:
     if not fetched.ok or fetched.data is None:
         return _unavailable(f"PyPI: {fetched.note}", link)
 
-    info: Json = fetched.data.get("info") or {}
-    urls: list[Json] = fetched.data.get("urls") or []
-    uploads = [t for t in (_parse_time(u.get("upload_time_iso_8601")) for u in urls) if t]
-    maintainers = frozenset(
-        str(v).strip() for key in ("maintainer", "maintainer_email", "author", "author_email") if (v := info.get(key))
-    )
+    uploads = _pypi_uploads(fetched.data)
+    maintainers = _pypi_maintainers(fetched.data)
     return VersionFacts(
         maintainers=maintainers or None,
         published=min(uploads) if uploads else None,
@@ -150,6 +146,20 @@ def _pypi_facts(fetcher: Fetcher, name: str, version: str) -> VersionFacts:
             **({} if maintainers else {"maintainers": "PyPI listed no maintainer or author"}),
             **({} if uploads else {"published": "PyPI listed no upload time for this version"}),
         },
+    )
+
+
+def _pypi_uploads(release: Json) -> list[datetime]:
+    """When each file of this release was uploaded."""
+    urls: list[Json] = release.get("urls") or []
+    return [t for t in (_parse_time(u.get("upload_time_iso_8601")) for u in urls) if t]
+
+
+def _pypi_maintainers(release: Json) -> frozenset[str]:
+    """PyPI's maintainer and author fields, names and emails alike."""
+    info: Json = release.get("info") or {}
+    return frozenset(
+        str(v).strip() for key in ("maintainer", "maintainer_email", "author", "author_email") if (v := info.get(key))
     )
 
 

@@ -46,8 +46,7 @@ def _component_key(name: object, purl: object) -> str:
 
 def _cyclonedx_graph(doc: Json) -> Graph | None:
     """CycloneDX `dependencies`: bom-refs resolved to component keys."""
-    components: list[Json] = doc.get("components") or []
-    by_ref = {c["bom-ref"]: _component_key(c.get("name"), c.get("purl")) for c in components if c.get("bom-ref")}
+    by_ref = _cyclonedx_refs(doc)
     edges: dict[str, set[str]] = {}
     dependencies: list[Json] = doc.get("dependencies") or []
     for entry in dependencies:
@@ -56,7 +55,13 @@ def _cyclonedx_graph(doc: Json) -> Graph | None:
             continue  # the root component, or a ref no component declares
         targets: list[str] = entry.get("dependsOn") or []
         edges.setdefault(key, set()).update(k for t in targets if (k := by_ref.get(t)) and k != key)
-    return {k: frozenset(v) for k, v in edges.items()} if edges else None
+    return _frozen(edges)
+
+
+def _cyclonedx_refs(doc: Json) -> dict[str, str]:
+    """bom-ref -> component key, for every component that declares a bom-ref."""
+    components: list[Json] = doc.get("components") or []
+    return {c["bom-ref"]: _component_key(c.get("name"), c.get("purl")) for c in components if c.get("bom-ref")}
 
 
 def _spdx_graph(doc: Json) -> Graph | None:
@@ -65,17 +70,25 @@ def _spdx_graph(doc: Json) -> Graph | None:
     by_id = {p["SPDXID"]: _component_key(p.get("name"), _spdx_purl(p)) for p in packages if p.get("SPDXID")}
     edges: dict[str, set[str]] = {}
     relationships: list[Json] = doc.get("relationships") or []
-    for rel in relationships:
-        kind = rel.get("relationshipType")
-        if kind == "DEPENDS_ON":
-            source, target = rel.get("spdxElementId"), rel.get("relatedSpdxElement")
-        elif kind == "DEPENDENCY_OF":
-            source, target = rel.get("relatedSpdxElement"), rel.get("spdxElementId")
-        else:
-            continue
+    for source, target in filter(None, map(_spdx_edge, relationships)):
         from_key, to_key = by_id.get(source), by_id.get(target)
         if from_key and to_key and from_key != to_key:
             edges.setdefault(from_key, set()).add(to_key)
+    return _frozen(edges)
+
+
+def _spdx_edge(rel: Json) -> tuple[str, str] | None:
+    """(depender, dependency) SPDX ids for a dependency relationship, else None."""
+    kind = rel.get("relationshipType")
+    if kind == "DEPENDS_ON":
+        return rel.get("spdxElementId"), rel.get("relatedSpdxElement")
+    if kind == "DEPENDENCY_OF":
+        return rel.get("relatedSpdxElement"), rel.get("spdxElementId")
+    return None
+
+
+def _frozen(edges: dict[str, set[str]]) -> Graph | None:
+    """The finished graph, or None when the document declared no usable edge."""
     return {k: frozenset(v) for k, v in edges.items()} if edges else None
 
 
