@@ -39,12 +39,16 @@ jobs:
           skip-unchanged: "false"
 
       - name: Post to boneyard
-        continue-on-error: true
         env:
           TOKEN: ${{ secrets.BONEYARD_TOKEN }}
           LABEL: "PR #${{ github.event.pull_request.number }}"
         run: |
           set -euo pipefail
+          # Fork and dependabot pull requests get no secrets: nothing to post with.
+          if [ -z "${TOKEN}" ]; then
+            echo "::notice::BONEYARD_TOKEN not available to this run; skipping the post"
+            exit 0
+          fi
           test -s sbom-diff-result.json
           curl --fail-with-body --silent --show-error \
             --retry 3 --retry-connrefused --max-time 60 \
