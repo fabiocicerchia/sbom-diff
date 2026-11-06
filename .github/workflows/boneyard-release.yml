@@ -39,6 +39,7 @@ jobs:
           skip-unchanged: "false"
 
       - name: Post to boneyard
+        continue-on-error: true
         env:
           TOKEN: ${{ secrets.BONEYARD_TOKEN }}
           LABEL: "PR #${{ github.event.pull_request.number }}"
