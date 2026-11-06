@@ -13,7 +13,7 @@ GETTING_STARTED = (ROOT / "docs" / "getting-started.md").read_text(encoding="utf
 
 
 def documented_commands() -> list[list[str]]:
-    commands = []
+    commands: list[list[str]] = []
     for line in GETTING_STARTED.splitlines():
         if line.startswith("sbom-diff "):
             argv = shlex.split(line, comments=True)[1:]
@@ -25,7 +25,7 @@ def documented_commands() -> list[list[str]]:
 
 
 def run(argv: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603  # nosec B603 — runs this repo's own CLI
         [sys.executable, str(ROOT / "sbom_diff.py"), *argv],
         capture_output=True,
         text=True,

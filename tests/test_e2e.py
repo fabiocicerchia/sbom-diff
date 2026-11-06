@@ -12,7 +12,7 @@ BASIC = ROOT / "examples" / "basic"
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603  # nosec B603 — runs this repo's own CLI
         [sys.executable, str(ROOT / "sbom_diff.py"), *args],
         capture_output=True,
         text=True,
@@ -29,7 +29,8 @@ def test_basic_example_prints_the_report_and_passes() -> None:
     assert report.startswith("# SBOM diff\n")
     for name in ("openssl", "libfoo", "oldpkg", "newpkg"):
         assert name in report
-    assert "Apache-2.0" in report and "GPL-3.0" in report
+    assert "Apache-2.0" in report
+    assert "GPL-3.0" in report
     # Major jumps are the headline, so they come before the patch update.
     assert report.index("openssl") < report.index("libfoo")
 
