@@ -36,7 +36,9 @@ pipeline {
           set -euo pipefail
           BASE_REF="${CHANGE_TARGET:+origin/$CHANGE_TARGET}"
           BASE_REF="${BASE_REF:-HEAD~1}"
-          git fetch --no-tags origin "${CHANGE_TARGET:-HEAD}" || true
+          if [ -n "${CHANGE_TARGET:-}" ]; then
+            git fetch --no-tags origin "+refs/heads/$CHANGE_TARGET:refs/remotes/origin/$CHANGE_TARGET"
+          fi
           syft -q -o cyclonedx-json=head.json dir:.
           git worktree add /tmp/base "$BASE_REF"
           syft -q -o cyclonedx-json=base.json dir:/tmp/base
