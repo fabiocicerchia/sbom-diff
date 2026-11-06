@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from sbom_diff_lib.cache import DEFAULT_TTL_SECONDS, Cache, default_cache_dir
-from sbom_diff_lib.compare import counts, diff, diff_vulnerabilities
+from sbom_diff_lib.compare import Counts, counts, diff, diff_vulnerabilities
 from sbom_diff_lib.exits import EXIT_GATE_FAILED, EXIT_OK, SbomError
 from sbom_diff_lib.fetch import DEFAULT_MAX_REQUESTS, Fetcher
 from sbom_diff_lib.graph import read_graph
@@ -29,7 +29,7 @@ from sbom_diff_lib.render_review import render_review, review_payload, tier_fail
 from sbom_diff_lib.review import GraphPair, Plan, Review, review
 from sbom_diff_lib.signals import GRAPH, SIGNALS, Options, select
 from sbom_diff_lib.tiers import TIER_IDS, TIERS
-from sbom_diff_lib.types import Changes, Json
+from sbom_diff_lib.types import Changes, Json, VulnDiff
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -207,16 +207,24 @@ def main(argv: list[str] | None = None) -> int:
         return exc.code
 
     changes = diff(old_comps, new_comps)
-    added, removed, changed, licenses, renamed = changes
     vulns = diff_vulnerabilities(old_vulns, new_vulns)
-    summary, body = explain(added, removed, changed, licenses, renamed=renamed, vulns=vulns)
-
     try:
         judgement = run_review(args, changes) if wants_review else None
     except ValueError as exc:
         parser.error(str(exc))
 
+    added, removed, changed, licenses, _ = changes
     totals = counts(added, removed, changed, licenses)
+    _print_report(args, changes, vulns, totals, judgement)
+    return _exit_code(args, changes, totals, judgement)
+
+
+def _print_report(
+    args: argparse.Namespace, changes: Changes, vulns: VulnDiff, totals: Counts, judgement: Review | None
+) -> None:
+    """The report on stdout: markdown, or the --json payload carrying it."""
+    added, removed, changed, licenses, renamed = changes
+    summary, body = explain(added, removed, changed, licenses, renamed=renamed, vulns=vulns)
     if judgement is not None:
         body = f"{body}\n" + "\n".join(render_review(judgement))
     # One string, rendered once: --json carries the same markdown stdout prints.
@@ -230,6 +238,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(report)  # noqa: T201 — the tool's output
 
+
+def _exit_code(args: argparse.Namespace, changes: Changes, totals: Counts, judgement: Review | None) -> int:
+    """Report every gate that failed on stderr, and turn them into the exit code."""
+    added, removed, changed, licenses, _ = changes
     fails = policy_failures(added, licenses, totals, policy_from_args(args))
     if judgement is not None:
         fails += tier_failures(judgement, args.fail_on_tier)
