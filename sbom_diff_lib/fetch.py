@@ -65,6 +65,29 @@ class RawResponse:
     body: bytes
     retry_after: float | None = None
 
+    @property
+    def should_retry(self) -> bool:
+        return self.status == HTTP_TOO_MANY_REQUESTS or self.status >= HTTP_SERVER_ERROR
+
+    def json(self) -> Json | None:
+        """The body as a JSON object, or None when it is anything else."""
+        try:
+            parsed: object = json.loads(self.body)
+        except ValueError:
+            return None
+        return cast(Json, parsed) if isinstance(parsed, dict) else None
+
+    @property
+    def note(self) -> str:
+        """Why a non-200 answer carries no data, written for a human."""
+        if self.status == HTTP_NOT_FOUND:
+            return "no record of this package version"
+        if self.status == HTTP_TOO_MANY_REQUESTS:
+            return "rate limited"
+        if self.status == 0:
+            return "the request did not complete"
+        return f"the source answered {self.status}"
+
 
 # A transport is anything that can turn a Request into a RawResponse. The
 # default one uses urllib; the tests use one backed by recorded files.
@@ -198,12 +221,12 @@ class Fetcher:
 
         response = self._send(request)
         if response.status == HTTP_OK:
-            data = _decode(response.body)
+            data = response.json()
             if data is None:
                 return Fetched(response.status, None, "the response was not a JSON object")
             self.cache.put(key, request.url, data)
             return Fetched(response.status, data, "")
-        return Fetched(response.status, None, _status_note(response.status))
+        return Fetched(response.status, None, response.note)
 
     def _send(self, request: Request) -> RawResponse:
         """One request, retried while the other end asks us to back off."""
@@ -212,7 +235,7 @@ class Fetcher:
             self._wait_turn(request.url)
             self.requests_made += 1
             response = self.transport(request)
-            if not _should_retry(response.status) or attempt == MAX_RETRIES:
+            if not response.should_retry or attempt == MAX_RETRIES:
                 return response
             delay = response.retry_after if response.retry_after is not None else 2.0**attempt
             if delay > MAX_BACKOFF_SECONDS:
@@ -220,25 +243,3 @@ class Fetcher:
                 return response
             self._sleep(delay)
         return response
-
-
-def _should_retry(status: int) -> bool:
-    return status == HTTP_TOO_MANY_REQUESTS or status >= HTTP_SERVER_ERROR
-
-
-def _decode(body: bytes) -> Json | None:
-    try:
-        parsed: object = json.loads(body)
-    except ValueError:
-        return None
-    return cast(Json, parsed) if isinstance(parsed, dict) else None
-
-
-def _status_note(status: int) -> str:
-    if status == HTTP_NOT_FOUND:
-        return "no record of this package version"
-    if status == HTTP_TOO_MANY_REQUESTS:
-        return "rate limited"
-    if status == 0:
-        return "the request did not complete"
-    return f"the source answered {status}"
