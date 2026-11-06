@@ -58,7 +58,7 @@ def _cyclonedx_graph(doc: Json) -> Graph | None:
     return _frozen(edges)
 
 
-def _cyclonedx_refs(doc: Json) -> dict[str, str]:
+def _cyclonedx_refs(doc: Json) -> dict[object, str]:
     """bom-ref -> component key, for every component that declares a bom-ref."""
     components: list[Json] = doc.get("components") or []
     return {c["bom-ref"]: _component_key(c.get("name"), c.get("purl")) for c in components if c.get("bom-ref")}
@@ -77,7 +77,7 @@ def _spdx_graph(doc: Json) -> Graph | None:
     return _frozen(edges)
 
 
-def _spdx_edge(rel: Json) -> tuple[str, str] | None:
+def _spdx_edge(rel: Json) -> tuple[object, object] | None:
     """(depender, dependency) SPDX ids for a dependency relationship, else None."""
     kind = rel.get("relationshipType")
     if kind == "DEPENDS_ON":
