@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -23,7 +23,7 @@ from sbom_diff_lib.tiers import tier_for
 Pair = Callable[[str], tuple[str, str]]
 
 # A fixed "now" so "published N days ago" is the same assertion next year.
-NOW = datetime(2024, 6, 13, 12, tzinfo=timezone.utc)
+NOW = datetime(2024, 6, 13, 12, tzinfo=UTC)
 
 
 def score_one(  # noqa: PLR0913 — the knobs a per-signal test needs, all of them optional

@@ -4,7 +4,7 @@ What it shows: the same dependency-change report on the sixteen CI/CD systems
 that aren't GitHub Actions. One file per platform, each one a drop-in.
 
 The composite action is GitHub-specific; the CLI is not. `sbom-diff` is
-stdlib-only Python 3.10+, takes two SBOM files, prints markdown, and exits `1`
+stdlib-only Python 3.11+, takes two SBOM files, prints markdown, and exits `1`
 when an opt-in gate trips. Every file here is that same shape:
 
 ```sh

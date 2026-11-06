@@ -7,7 +7,7 @@ first, and only the sources those signals actually need are ever fetched.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sbom_diff_lib.depsdev import Scorecard, scorecard
 from sbom_diff_lib.fetch import Fetcher
@@ -91,7 +91,7 @@ class Review:
 
 def review(changes: Changes, graphs: GraphPair, fetcher: Fetcher, plan: Plan, now: datetime | None = None) -> Review:
     """Score every added and version-changed component, worst first."""
-    moment = now or datetime.now(timezone.utc)
+    moment = now or datetime.now(UTC)
     findings = [_score(_subject(pair, graphs, fetcher, plan, moment), plan) for pair in _subjects(changes)]
     # Loudest tier first, then by score, then by name so two runs of the same
     # diff produce the same document.

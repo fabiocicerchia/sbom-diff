@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Two SBOMs in CycloneDX or SPDX JSON (e.g. produced by
   [syft](https://github.com/anchore/syft)).
 
@@ -65,7 +65,7 @@ trips several signals offline.
 ## Other CI systems
 
 The composite action is GitHub-specific; the CLI is not. It is stdlib-only
-Python 3.10+, takes two SBOM files, prints markdown, and exits `1` when an
+Python 3.11+, takes two SBOM files, prints markdown, and exits `1` when an
 opt-in gate trips (an unusable input gets its own code, not `1`) — which is
 all a gate needs anywhere:
 
