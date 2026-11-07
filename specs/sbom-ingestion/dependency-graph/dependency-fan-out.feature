@@ -16,7 +16,7 @@ Feature: Counting what a dependency pulls in
     Examples:
       | direct | indirect | detail                                    |
       | 9      | 0        | pulls in 9 package(s), 7 more than before |
-      | 3      | 4        | pulls in 7 package(s), 5 more than before |
+      | 3      | 5        | pulls in 8 package(s), 6 more than before |
 
   @id:sbom-ingestion.dependency-graph.002 @rule:sbom.dependency-graph.cycles-and-self-counted-once @inferred @source:sbom_diff_lib/graph.py#fanout
   Scenario: A dependency cycle is counted once and a package never counts itself

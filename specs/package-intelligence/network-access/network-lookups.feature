@@ -11,7 +11,7 @@ Feature: Looking up packages over the network politely
     And the review needs more lookups than that
     When the operator runs the review
     Then the lookups past the budget are not sent
-    And each such signal is shown as not checkable with the reason "request budget of <limit> spent"
+    And each such signal is shown as not checkable with the source's name followed by the reason "request budget of <limit> spent"
     And the review section warns that the request budget was spent before every component was checked and suggests raising --max-requests
 
     Examples:
@@ -25,24 +25,24 @@ Feature: Looking up packages over the network politely
     And the review needs 500 lookups
     When the operator runs the review
     Then every lookup is sent
-    And no signal is marked with "request budget spent"
+    And no signal is marked not checkable because the request budget was spent
     And the review section shows no budget warning
 
   @id:package-intelligence.network-access.003 @rule:package-intelligence.network-access.offline-sends-nothing @verified @source:sbom_diff_lib/fetch.py#Fetcher @test:tests/test_review.py#test_offline_never_reaches_the_transport @test:tests/test_integration.py#test_a_response_is_written_to_disk_and_answers_a_later_offline_run
-  Scenario: Offline mode sends nothing but still uses answers already saved
+  Scenario: Offline mode sends nothing and skips every signal that needs a package source
     Given the operator runs with --offline
-    And an earlier run saved the npm answer for left-pad, but not for lodash
+    And an earlier run saved the npm answer for left-pad
     When the operator runs the review
     Then no request leaves the machine
-    And the left-pad lookup is answered from the saved response
-    And the lodash lookup is shown as not checkable with the reason "offline: not fetched"
+    And every signal that needs npm, PyPI, OSV or deps.dev is skipped with the reason "offline: needs" and its source
+    And the saved left-pad answer is not used
 
   @id:package-intelligence.network-access.004 @rule:package-intelligence.network-access.failures-stated-not-crashed @verified @source:sbom_diff_lib/fetch.py#RawResponse @test:tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash
   Scenario Outline: A lookup that brings back no data says why, and the run carries on
     Given a package source answers a lookup with <answer>
     When the operator runs the review
     Then the run does not crash
-    And the affected signal is shown as not checkable with the reason "<reason>"
+    And the affected signal is shown as not checkable with the source's name followed by the reason "<reason>"
 
     Examples:
       | answer                                           | reason                             |

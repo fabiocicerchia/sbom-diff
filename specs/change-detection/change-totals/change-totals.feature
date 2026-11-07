@@ -20,4 +20,4 @@ Feature: Headline change totals
     When the operator compares the old SBOM with the new SBOM
     Then the downgrades count is 1
     And the headline includes ", 1 downgraded"
-    And x is listed as "x: 2.0.0 → 1.9.0 *(downgrade)*"
+    And x is listed as "**x**: 2.0.0 → 1.9.0 *(downgrade)*" under the major version jumps

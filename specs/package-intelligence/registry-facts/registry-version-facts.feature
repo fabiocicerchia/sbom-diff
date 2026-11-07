@@ -23,7 +23,7 @@ Feature: Reading npm and PyPI facts about a package version
   Scenario: Only npm scripts that run on install are reported as install scripts
     Given an npm package version whose published scripts include "postinstall" and "test"
     When the operator reviews the diff
-    Then the version is reported with the "postinstall" script and its command
+    Then the "postinstall" script is reported as an install script
     And the "test" script is not reported
     And only scripts named preinstall, install or postinstall are ever reported
 

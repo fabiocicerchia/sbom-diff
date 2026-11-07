@@ -9,6 +9,7 @@ Feature: Spotting added, removed and updated dependencies
   Scenario: A package only in the new SBOM is added, one only in the old SBOM is removed
     Given the old SBOM lists openssl 3.0.1 and left-pad 1.0.0
     And the new SBOM lists openssl 4.0.0 and requests 2.31.0
+    And the new SBOM has no dependency graph
     When the operator compares the old SBOM with the new SBOM
     Then the report lists requests 2.31.0 under "New dependencies (1, 1 transitive)"
     And the report lists left-pad 1.0.0 under "Removed dependencies (1)"
@@ -16,7 +17,7 @@ Feature: Spotting added, removed and updated dependencies
 
   @id:change-detection.added-removed.002 @rule:change-detection.added-removed.unchanged-package-not-reported @inferred @source:sbom_diff_lib/compare.py#diff
   Scenario: A package with the same name, version and license in both SBOMs is not reported
-    Given both SBOMs list requests 2.31.0 under the MIT license
+    Given both SBOMs list only requests 2.31.0 under the MIT license
     When the operator compares the old SBOM with the new SBOM
     Then requests appears in no section of the report
     And the headline reads "0 dependency change(s): 0 added, 0 removed, 0 updated (0 major)"

@@ -22,19 +22,19 @@ Feature: Looking up known advisories for a package version
 
   @id:package-intelligence.security-advisories.002 @rule:package-intelligence.advisories.osv-ecosystem-naming @inferred @source:sbom_diff_lib/osv.py#advisories
   Scenario Outline: Packages are looked up in OSV under the ecosystem name OSV uses
-    Given the head SBOM updates the package "<name>" version "<version>" whose purl type is <purl_ecosystem>
+    Given the head SBOM updates the package "<name>" version "<version>" whose purl type is <purl_type>
     When the operator reviews the change
     Then OSV is asked about "<name>" version "<version>" in the "<osv_ecosystem>" ecosystem
 
     Examples:
-      | purl_ecosystem | osv_ecosystem | name            | version |
-      | npm            | npm           | left-pad        | 1.3.0   |
-      | PyPI           | PyPI          | requests        | 2.31.0  |
-      | Cargo          | crates.io     | serde           | 1.0.200 |
-      | Composer       | Packagist     | monolog/monolog | 3.5.0   |
-      | hex            | Hex           | plug            | 1.15.0  |
-      | pub            | Pub           | http            | 1.2.0   |
-      | conan          | ConanCenter   | zlib            | 1.3.1   |
+      | purl_type | osv_ecosystem | name            | version |
+      | npm       | npm           | left-pad        | 1.3.0   |
+      | pypi      | PyPI          | requests        | 2.31.0  |
+      | cargo     | crates.io     | serde           | 1.0.200 |
+      | composer  | Packagist     | monolog/monolog | 3.5.0   |
+      | hex       | Hex           | plug            | 1.15.0  |
+      | pub       | Pub           | http            | 1.2.0   |
+      | conan     | ConanCenter   | zlib            | 1.3.1   |
 
   @id:package-intelligence.security-advisories.003 @rule:package-intelligence.advisories.both-versions-queried @verified @source:sbom_diff_lib/review.py#_advisories @test:tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported
   Scenario: Advisories are looked up for both the old and the new version of an updated package
@@ -61,7 +61,7 @@ Feature: Looking up known advisories for a package version
 
     Examples:
       | cause                                                | reason                             |
-      | the request budget is spent                          | request budget of 50 spent         |
+      | the default request budget of 300 is spent          | request budget of 300 spent        |
       | OSV answered with something other than a JSON object | the response was not a JSON object |
 
   @id:package-intelligence.security-advisories.006 @rule:package-intelligence.advisories.ordered-by-id @inferred @source:sbom_diff_lib/osv.py#advisories @questionable

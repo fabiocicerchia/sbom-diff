@@ -26,8 +26,8 @@ Feature: Looking up a package's project health scorecard
     Examples:
       | ecosystem |
       | deb       |
-      | Hex       |
-      | Pub       |
+      | hex       |
+      | pub       |
 
   @id:package-intelligence.project-health.003 @rule:package-intelligence.project-health.missing-score-reason @inferred @source:sbom_diff_lib/depsdev.py#scorecard
   Scenario Outline: When no Scorecard can be found, the review says why instead of guessing a score

@@ -37,7 +37,7 @@ Feature: Reading the dependency change report
       | package | old                | new     | shown_old       | shown_new |
       | openssl | Apache-2.0         | GPL-3.0 | Apache-2.0      | GPL-3.0   |
       | libfoo  | no license         | MIT     | (none)          | MIT       |
-      | libbar  | MIT and Apache-2.0 | MIT     | MIT, Apache-2.0 | MIT       |
+      | libbar  | MIT and Apache-2.0 | MIT     | Apache-2.0, MIT | MIT       |
 
   @id:diff-report.markdown-report.005 @rule:diff-report.markdown.vulnerability-delta @verified @source:sbom_diff_lib/render.py#_render_vulnerabilities @test:tests/test_render.py#test_explain_renders_every_section_most_alarming_first
   Scenario: Vulnerability changes list what was newly reported, what is no longer reported and what changed state

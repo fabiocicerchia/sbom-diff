@@ -10,7 +10,7 @@ Feature: Consuming the diff as JSON
     Given the new SBOM adds one dependency
     When the operator compares the two SBOMs asking for JSON output
     Then "counts.added" is 1
-    And "markdown" starts with "# SBOM diff" and contains "summary"
+    And "markdown" starts with "# SBOM diff" and contains the headline given in "summary"
     And "markdown" is identical to the report printed without JSON output
 
   @id:diff-report.json-output.002 @rule:diff-report.json.changes-as-old-new-pairs @inferred @source:sbom_diff_lib/render.py#json_payload
@@ -25,4 +25,3 @@ Feature: Consuming the diff as JSON
     Given neither SBOM carries vulnerability statements
     When the operator compares the two SBOMs asking for JSON output
     Then "vulnerabilities" has "added", "removed" and "changed", each empty
-    And when vulnerability data is present, each "changed" entry has an "old" and a "new" state

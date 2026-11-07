@@ -8,9 +8,9 @@ Feature: Keeping the documentation site on one self-contained look
   @id:docs.documentation-site.site-theme.001 @rule:docs.theme.single-shared-accent-palette @inferred @source:docs/stylesheets/extra.css#:root @questionable
   Scenario: The splash page and the guides share one accent palette
     Given the site's accent pair is orange #fb923c with red #ef4444
-    When a reader opens the splash page and then a guide page
-    Then the splash title, primary buttons and the guide hero heading show the same orange-to-red gradient
-    And links and the header chrome on the light scheme are red #ef4444
+    When a reader opens the splash page and then the docs home page
+    Then the splash title, primary buttons and the docs home hero heading show the same orange-to-red gradient
+    And links on the light scheme are red #ef4444
     And both pages show the same two accent colours
 
   @id:docs.documentation-site.site-theme.002 @rule:docs.theme.no-external-assets @inferred @source:docs/stylesheets/extra.css#:root

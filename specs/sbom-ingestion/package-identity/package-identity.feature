@@ -53,7 +53,7 @@ Feature: Matching packages across SBOMs
     Given the new SBOM adds a component with Package URL "<purl>"
     When the operator diffs the two SBOMs with review enabled
     Then the package's ecosystem in the JSON review is "<ecosystem>"
-    And the markdown review heading for the package <heading>
+    And, when the package lands in the "Read this" or "Glance" tier, its markdown review heading <heading>
 
     Examples:
       | purl                               | ecosystem      | heading                  |

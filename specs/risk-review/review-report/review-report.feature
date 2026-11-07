@@ -42,9 +42,9 @@ Feature: Reading the ranked review
     And it ends with "<cost>"
 
     Examples:
-      | mode                                                | cost                                              |
-      | offline                                             | Nothing was fetched: this run was offline.        |
-      | online, making 4 lookups with 2 answered from cache | 4 request(s) made, 2 answer(s) served from cache. |
+      | mode                                                  | cost                                              |
+      | offline                                               | Nothing was fetched: this run was offline.        |
+      | online, sending 4 requests and answering 2 from cache | 4 request(s) made, 2 answer(s) served from cache. |
 
   @id:risk-review.review-report.005 @rule:risk-review.review-report.budget-spent-warning @inferred @source:sbom_diff_lib/render_review.py#render_review
   Scenario: A run that ran out of its request budget warns that later signals are unchecked, not clean

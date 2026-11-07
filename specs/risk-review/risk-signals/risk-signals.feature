@@ -103,13 +103,13 @@ Feature: Asking risk questions of every changed package
 
     Examples:
       | situation                                                        | signal          | reason                                              |
-      | a Debian package changed, which the npm registry does not cover  | install-scripts | the registry's note naming deb                      |
-      | a Debian package changed, which OSV does not index               | advisories      | OSV was not queried for deb                         |
-      | the npm registry has no record of the new version                | maintainers     | no record of this package version                   |
+      | a Debian package changed, which no registry the tool reads covers | install-scripts | no registry this tool reads exposes it for deb      |
+      | a Debian package changed, which OSV does not index               | advisories      | OSV is not queried for deb packages                 |
+      | the npm registry answers 404 for an updated package              | maintainers     | npm: no record of this package version              |
       | a package went from release-2023 to release-2024                 | major-skip      | release-2023 → release-2024 is not a numbered major |
       | the new SBOM carries no dependency graph for the package         | fanout          | the new SBOM has no dependency graph for it         |
       | the base SBOM carries no dependency graph for an updated package | fanout          | the base SBOM has no dependency graph for it        |
-      | deps.dev was not asked                                           | scorecard       | deps.dev was not asked                              |
+      | a Debian package was updated, which deps.dev does not index      | scorecard       | deps.dev does not index deb packages                |
 
   @id:risk-review.risk-signals.007 @rule:risk.signals.install-scripts-unverified-previous @inferred @source:sbom_diff_lib/signals.py#install_scripts @questionable
   Scenario: Install scripts count as added when the previous version's scripts could not be checked
