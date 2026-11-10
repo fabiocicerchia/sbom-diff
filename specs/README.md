@@ -4,6 +4,7 @@ What this code does, one atomic Gherkin scenario per behaviour, read from the co
 Tags: `@verified` a test asserts it · `@inferred` read from the code only · `@gap` an entry point no test covers · `@human` written or amended by a person, never rewritten.
 
 ## Change Detection
+
 Working out exactly what changed between the old and new SBOM.
 
 - **Added and removed dependencies**: [Spotting added, removed and updated dependencies](change-detection/added-removed/added-removed-dependencies.feature) (1)
@@ -13,6 +14,7 @@ Working out exactly what changed between the old and new SBOM.
 - **Version changes**: [Sizing and directing version changes](change-detection/version-changes/version-change-size-and-direction.feature) (5)
 
 ## CI Gating
+
 Turning a dependency diff into a pass or fail result a pipeline can act on.
 
 - **Change thresholds**: [Gating a change on how much it adds or downgrades](ci-gating/change-thresholds/change-threshold-gates.feature) (4)
@@ -21,17 +23,20 @@ Turning a dependency diff into a pass or fail result a pipeline can act on.
 - **License policy**: [Gating a change on licenses](ci-gating/license-policy/license-policy-gates.feature) (2)
 
 ## Command Line
+
 How users run sbom-diff and control its behaviour.
 
 - **Run flow**: [Running a diff from the command line](command-line/run-flow/running-a-diff.feature) (3)
 
 ## Build, Packaging and Integrations
+
 Building, installing, containerising and wiring sbom-diff into CI platforms.
 
 - **CI platform examples**: [Gating a Devtron deployment on the SBOM diff](developer-tooling/ci-platform-examples/devtron-sbom-gate.feature) (3)
 - **Container image**: [Running sbom-diff from the container image](developer-tooling/container-image/container-image.feature) (2)
 
 ## Diff Report
+
 Presenting the dependency changes as plain-language output for people and machines.
 
 - **JSON output**: [Consuming the diff as JSON](diff-report/json-output/json-diff-output.feature) (3)
@@ -39,6 +44,7 @@ Presenting the dependency changes as plain-language output for people and machin
 - **Summary headline**: [Summarising a dependency update in one line](diff-report/summary-headline/summary-headline.feature) (2)
 
 ## Package Intelligence
+
 Gathering outside facts about packages from public registries and security databases.
 
 - **Network access**: [Looking up packages over the network politely](package-intelligence/network-access/network-lookups.feature) (5)
@@ -48,6 +54,7 @@ Gathering outside facts about packages from public registries and security datab
 - **Security advisories**: [Looking up known advisories for a package version](package-intelligence/security-advisories/osv-advisory-lookup.feature) (6)
 
 ## Risk Review
+
 The opt-in judgement layer that decides which changes a human should actually read, and why.
 
 - **Review orchestration**: [Deciding what gets reviewed and in what order](risk-review/review-orchestration/review-orchestration.feature) (3)
@@ -57,6 +64,7 @@ The opt-in judgement layer that decides which changes a human should actually re
 - **Signal selection**: [Choosing which risk signals run](risk-review/signal-selection/risk-signal-selection.feature) (3)
 
 ## SBOM Ingestion
+
 Reading CycloneDX and SPDX documents into one consistent picture of the components they list.
 
 - **Dependency graph**: [Counting what a dependency pulls in](sbom-ingestion/dependency-graph/dependency-fan-out.feature) (4), [Telling direct from transitive dependencies](sbom-ingestion/dependency-graph/direct-vs-transitive.feature) (2)
