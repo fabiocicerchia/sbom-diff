@@ -31,11 +31,3 @@ Feature: Reporting the outcome of a run through its exit code
     Then the report is printed on stdout
     And stderr is empty
     And the run exits with code 0
-
-  @id:ci-gating.exit-codes.007 @rule:ci.exit-codes.tripped-gate-exits-one @verified @source:sbom_diff_lib/cli.py#_exit_code @test:tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout @questionable
-  Scenario: A tripped gate exits with code 1, which is kept apart from input errors
-    Given the old SBOM "old.json" is a valid SBOM
-    And the change from "old.json" to "new.json" includes a major-version jump
-    When the operator diffs "old.json" against "new.json" with "--fail-on major"
-    Then the report is still printed on stdout
-    And the run exits with code 1

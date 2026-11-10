@@ -19,10 +19,3 @@ Feature: Failing CI on a chosen class of change
       | one component is added               | any     | 1    |
       | internal-toolkit changes license     | license | 1    |
       | no component changes license         | license | 0    |
-
-  @id:ci-gating.fail-on-rules.002 @rule:ci-gating.fail-on-rules.silent-failure @inferred @source:sbom_diff_lib/cli.py#_exit_code @questionable
-  Scenario: A run failed by --fail-on gives no reason on stderr
-    Given openssl goes from 1.1.1 to 3.0.0 and no other gate is set
-    When the operator runs sbom-diff with --fail-on major
-    Then the exit code is 1
-    And stderr shows no line saying why the run failed

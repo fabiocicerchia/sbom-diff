@@ -14,10 +14,3 @@ Feature: Spotting added, removed and updated dependencies
     Then the report lists requests 2.31.0 under "New dependencies (1, 1 transitive)"
     And the report lists left-pad 1.0.0 under "Removed dependencies (1)"
     And openssl is reported as a version change from 3.0.1 to 4.0.0, not as one added and one removed package
-
-  @id:change-detection.added-removed.002 @rule:change-detection.added-removed.unchanged-package-not-reported @inferred @source:sbom_diff_lib/compare.py#diff
-  Scenario: A package with the same name, version and license in both SBOMs is not reported
-    Given both SBOMs list only requests 2.31.0 under the MIT license
-    When the operator compares the old SBOM with the new SBOM
-    Then requests appears in no section of the report
-    And the headline reads "0 dependency change(s): 0 added, 0 removed, 0 updated (0 major)"

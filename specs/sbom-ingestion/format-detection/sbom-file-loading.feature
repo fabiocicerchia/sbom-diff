@@ -39,19 +39,3 @@ Feature: Loading an SBOM file and recognising its format
       | {"components": null} with no format marker (a truncated fragment) |
       | a bare JSON array                                                 |
       | a bare JSON string                                                |
-
-  @id:sbom-ingestion.format-detection.004 @rule:sbom-ingestion.format-detection.unusable-file-exit-by-kind @verified @source:sbom_diff_lib/load.py#read_sbom @test:tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate @test:tests/test_e2e.py#test_missing_sbom_exits_with_a_message_not_a_traceback @test:tests/test_sbom_diff.py#test_deeply_nested_json_is_an_input_error_not_a_recursion_crash
-  Scenario Outline: An unusable SBOM file is reported in one line with an exit code naming the kind of failure
-    Given the old SBOM path <situation>
-    When the operator compares it with a valid new SBOM
-    Then no report is printed and no traceback is shown
-    And the error output reads "sbom-diff: <path>: <message>"
-    And the exit code is <code>, never the gate-failure code 1
-
-    Examples:
-      | situation                                                | message                                      | code |
-      | points to no file                                        | no such file                                 | 66   |
-      | points to a file the operator may not read               | permission denied                            | 77   |
-      | points to a directory                                    | the system's read error, e.g. Is a directory | 74   |
-      | points to a file that is not JSON, e.g. an HTML 404 page | not valid JSON: <parser detail>              | 65   |
-      | points to JSON nested about 10,000 levels deep           | nested too deeply to parse                   | 65   |

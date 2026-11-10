@@ -36,18 +36,6 @@ Feature: Counting what a dependency pulls in
       | "web" DEPENDS_ON "lib"    |
       | "lib" DEPENDENCY_OF "web" |
 
-  @id:sbom-ingestion.dependency-graph.004 @rule:sbom.dependency-graph.no-graph-is-not-checkable @inferred @source:sbom_diff_lib/graph.py#read_graph
-  Scenario Outline: Without a dependency graph the fan-out is reported as not checkable, never as zero
-    Given the <side> SBOM carries no dependency relationships at all
-    When the operator reviews the two SBOMs
-    Then the fan-out signal for the updated package is not checkable
-    And its detail reads "<detail>"
-
-    Examples:
-      | side | detail                                       |
-      | new  | the new SBOM has no dependency graph for it  |
-      | old  | the base SBOM has no dependency graph for it |
-
   @id:sbom-ingestion.dependency-graph.005 @rule:sbom.dependency-graph.package-absent-from-graph-not-checkable @inferred @source:sbom_diff_lib/graph.py#fanout @questionable
   Scenario Outline: A package the graph lists no dependencies for is reported as not checkable
     Given the new SBOM carries a dependency graph

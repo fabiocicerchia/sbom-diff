@@ -21,14 +21,6 @@ Feature: Deciding what gets reviewed and in what order
       | is removed                                    | does not appear |
       | changes only its license, keeping its version | does not appear |
 
-  @id:risk-review.review-orchestration.002 @rule:risk.scoring.score-is-sum-of-fired-signals @verified @source:sbom_diff_lib/review.py#_score @test:tests/test_review.py#test_score_adds_up_and_picks_the_tier
-  Scenario: A package's score is the sum of the points of the signals that fired on it, and the score picks its tier
-    Given the enabled signals include advisories worth 5 points
-    And only the advisories signal fires on package "left-pad"
-    When the operator runs the review
-    Then "left-pad" scores 5
-    And "left-pad" is placed in the "Read this" tier
-
   @id:risk-review.review-orchestration.003 @rule:risk.review.findings-ranked-worst-first @inferred @source:sbom_diff_lib/review.py#review
   Scenario: Findings are listed loudest tier first, then highest score, then by name
     Given package "zeta" lands in "Read this" with 7 points

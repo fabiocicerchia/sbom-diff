@@ -13,12 +13,6 @@ Feature: Reading the dependency change report
     And major-jump package names are bold and calmer buckets are plain
     And within each section packages are listed alphabetically by name
 
-  @id:diff-report.markdown-report.002 @rule:diff-report.markdown.downgrade-labelled @verified @source:sbom_diff_lib/render.py#classify_jumps @test:tests/test_render.py#test_explain_renders_every_section_most_alarming_first
-  Scenario: A version downgrade is labelled as a downgrade in whichever size bucket it lands
-    Given package "six" goes from 2.0.0 in the old SBOM to 1.9.0 in the new SBOM
-    When the reviewer compares the two SBOMs
-    Then the major version jumps section lists "**six**: 2.0.0 → 1.9.0 *(downgrade)*"
-
   @id:diff-report.markdown-report.003 @rule:diff-report.markdown.transitive-additions-marked @verified @source:sbom_diff_lib/render.py#_render_added @test:tests/test_render.py#test_explain_renders_every_section_most_alarming_first @questionable
   Scenario: New transitive dependencies are marked and counted in the section heading
     Given the new SBOM adds direct dependency "requests 2.31.0" and transitive dependency "idna 3.6"
@@ -48,17 +42,6 @@ Feature: Reading the dependency change report
     Then the "Vulnerability changes (VEX)" section lists "⚠ **CVE-1** newly reported (affected, high)"
     And then "✅ **CVE-2** no longer reported (was: exploitable)"
     And then "🔄 **CVE-3**: in_triage → not_affected"
-
-  @id:diff-report.markdown-report.006 @rule:diff-report.markdown.rename-shows-version-only-when-changed @verified @source:sbom_diff_lib/render.py#_render_renamed @test:tests/test_render.py#test_explain_renders_every_section_most_alarming_first @questionable
-  Scenario Outline: A rename shows the old and new names, plus the version change only when the version moved
-    Given package "<old_name>" <old_version> becomes "<new_name>" <new_version> with the same package identity
-    When the reviewer compares the two SBOMs
-    Then the renamed section lists "<line>"
-
-    Examples:
-      | old_name        | old_version | new_name | new_version | line                                                 |
-      | python-dateutil | 2.8.0       | dateutil | 2.8.0       | - **python-dateutil** → **dateutil**                 |
-      | python-dateutil | 2.8.0       | dateutil | 2.9.0       | - **python-dateutil** → **dateutil** (2.8.0 → 2.9.0) |
 
   @id:diff-report.markdown-report.007 @rule:diff-report.markdown.no-change-no-sections @verified @source:sbom_diff_lib/render.py#explain @test:tests/test_render.py#test_explain_with_no_changes_is_a_headline_and_an_empty_body
   Scenario: Identical SBOMs give a headline and no sections

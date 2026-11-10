@@ -13,15 +13,6 @@ Feature: Running a diff from the command line
     And the exit code is 2
     And no report is printed
 
-  @id:command-line.run-flow.002 @rule:cli.run.json-carries-the-printed-report @verified @source:sbom_diff_lib/cli.py#_print_report @test:tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout @test:tests/test_sbom_diff.py#test_json_output_carries_counts_and_markdown
-  Scenario: JSON output carries exactly the markdown report the plain run prints
-    Given the new SBOM adds one component
-    When the operator runs sbom-diff with --json
-    Then stdout is a JSON document
-    And its markdown field is the same report a run without --json prints, starting with "# SBOM diff"
-    And its summary appears inside that markdown
-    And its counts show 1 added component
-
   @id:command-line.run-flow.003 @rule:cli.run.review-only-when-asked @verified @source:sbom_diff_lib/cli.py#main @test:tests/test_review.py#test_a_diff_without_the_review_flag_is_unchanged @test:tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped @test:tests/test_review.py#test_a_tier_gate_implies_the_review
   Scenario Outline: The review appears only when the operator asks for it or sets a tier gate
     Given the new SBOM updates a component by a major version
@@ -41,10 +32,3 @@ Feature: Running a diff from the command line
     Then every signal is printed with its id, its points and its source
     And every tier is printed with its minimum score, such as "Read this  score >= 5"
     And the exit code is 0
-
-  @id:command-line.run-flow.005 @rule:cli.signals.unknown-signal-refused @verified @source:sbom_diff_lib/cli.py#main @test:tests/test_review.py#test_unknown_signal_is_a_usage_error
-  Scenario: Disabling a signal that does not exist is refused as a usage error
-    Given the operator asks for the review
-    When the operator runs sbom-diff with --disable-signal nonsense
-    Then the run stops with an error naming "unknown signal(s): nonsense"
-    And the exit code is 2

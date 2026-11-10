@@ -777,7 +777,7 @@
    },
    {
     "candidate": "Missing trailing segment counts as zero (1.2 == 1.2.0)",
-    "covered_by": "folded into size-classified outline row 1.2 \u2192 1.2.1",
+    "covered_by": "folded into size-classified outline row 1.2 → 1.2.1",
     "reason": "TRIVIAL",
     "source": "sbom_diff_lib/versions.py#_compare_core"
    }
@@ -953,7 +953,24 @@
   "sbom-diff/makefile": [],
   "sbom-diff/sbom-diff": []
  },
- "retired": [],
+ "retired": [
+  "change-detection.added-removed.002",
+  "change-detection.vulnerability-changes.001",
+  "ci-gating.exit-codes.001",
+  "ci-gating.exit-codes.004",
+  "ci-gating.exit-codes.007",
+  "ci-gating.fail-on-rules.002",
+  "ci-gating.fail-on-rules.003",
+  "command-line.run-flow.002",
+  "command-line.run-flow.005",
+  "diff-report.markdown-report.002",
+  "diff-report.markdown-report.006",
+  "risk-review.review-orchestration.002",
+  "risk-review.review-report.005",
+  "risk-review.scoring-tiers.003",
+  "sbom-ingestion.dependency-graph.004",
+  "sbom-ingestion.format-detection.004"
+ ],
  "scenarios": {
   "change-detection.added-removed.001": {
    "file": "specs/change-detection/added-removed/added-removed-dependencies.feature",
@@ -966,16 +983,6 @@
    "tests": [
     "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds"
    ]
-  },
-  "change-detection.added-removed.002": {
-   "file": "specs/change-detection/added-removed/added-removed-dependencies.feature",
-   "fingerprint": "2cb5fdc9eb6a",
-   "human": false,
-   "rule": "change-detection.added-removed.unchanged-package-not-reported",
-   "source": "sbom_diff_lib/compare.py#diff",
-   "status": "inferred",
-   "test": "",
-   "tests": []
   },
   "change-detection.change-totals.001": {
    "file": "specs/change-detection/change-totals/change-totals.feature",
@@ -1095,18 +1102,6 @@
    "test": "",
    "tests": []
   },
-  "change-detection.vulnerability-changes.001": {
-   "file": "specs/change-detection/vulnerability-changes/vulnerability-state-changes.feature",
-   "fingerprint": "eee16c6fe3c3",
-   "human": false,
-   "rule": "change-detection.vulnerability-changes.introduced-fixed-status",
-   "source": "sbom_diff_lib/compare.py#diff_vulnerabilities",
-   "status": "verified",
-   "test": "tests/test_sbom_diff.py#test_vulnerability_delta",
-   "tests": [
-    "tests/test_sbom_diff.py#test_vulnerability_delta"
-   ]
-  },
   "ci-gating.change-thresholds.001": {
    "file": "specs/ci-gating/change-thresholds/change-threshold-gates.feature",
    "fingerprint": "283c7b265cb1",
@@ -1154,19 +1149,6 @@
     "tests/test_sbom_diff.py#test_policy_thresholds_are_opt_in"
    ]
   },
-  "ci-gating.exit-codes.001": {
-   "file": "specs/ci-gating/exit-codes/gating-a-pipeline.feature",
-   "fingerprint": "94541475912f",
-   "human": false,
-   "rule": "cli.gates.opt-in-and-reported",
-   "source": "sbom_diff_lib/cli.py#_exit_code",
-   "status": "verified",
-   "test": "tests/test_sbom_diff.py#test_downgrade_detection",
-   "tests": [
-    "tests/test_sbom_diff.py#test_downgrade_detection",
-    "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes"
-   ]
-  },
   "ci-gating.exit-codes.002": {
    "file": "specs/ci-gating/exit-codes/gating-a-pipeline.feature",
    "fingerprint": "94541475912f",
@@ -1188,19 +1170,6 @@
    "status": "inferred",
    "test": "",
    "tests": []
-  },
-  "ci-gating.exit-codes.004": {
-   "file": "specs/ci-gating/exit-codes/gating-a-pipeline.feature",
-   "fingerprint": "e8494322109b",
-   "human": false,
-   "rule": "cli.exit.unusable-input-by-kind",
-   "source": "sbom_diff_lib/cli.py#main",
-   "status": "verified",
-   "test": "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
-   "tests": [
-    "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
-    "tests/test_e2e.py#test_missing_sbom_exits_with_a_message_not_a_traceback"
-   ]
   },
   "ci-gating.exit-codes.005": {
    "file": "specs/ci-gating/exit-codes/exit-codes.feature",
@@ -1228,18 +1197,6 @@
     "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes"
    ]
   },
-  "ci-gating.exit-codes.007": {
-   "file": "specs/ci-gating/exit-codes/exit-codes.feature",
-   "fingerprint": "94541475912f",
-   "human": false,
-   "rule": "ci.exit-codes.tripped-gate-exits-one",
-   "source": "sbom_diff_lib/cli.py#_exit_code",
-   "status": "verified",
-   "test": "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
-   "tests": [
-    "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout"
-   ]
-  },
   "ci-gating.fail-on-rules.001": {
    "file": "specs/ci-gating/fail-on-rules/fail-on-rules.feature",
    "fingerprint": "344dda20ac35",
@@ -1252,28 +1209,6 @@
     "tests/test_sbom_diff.py#test_fail_on_major",
     "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
     "tests/test_docs_commands.py#test_every_documented_command_runs_on_the_review_example"
-   ]
-  },
-  "ci-gating.fail-on-rules.002": {
-   "file": "specs/ci-gating/fail-on-rules/fail-on-rules.feature",
-   "fingerprint": "94541475912f",
-   "human": false,
-   "rule": "ci-gating.fail-on-rules.silent-failure",
-   "source": "sbom_diff_lib/cli.py#_exit_code",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "ci-gating.fail-on-rules.003": {
-   "file": "specs/ci-gating/fail-on-rules/fail-on-tier.feature",
-   "fingerprint": "1b141f833be2",
-   "human": false,
-   "rule": "ci-gating.fail-on-rules.tier-threshold",
-   "source": "sbom_diff_lib/render_review.py#tier_failures",
-   "status": "verified",
-   "test": "tests/test_review.py#test_fail_on_tier_is_the_gate",
-   "tests": [
-    "tests/test_review.py#test_fail_on_tier_is_the_gate"
    ]
   },
   "ci-gating.fail-on-rules.004": {
@@ -1320,19 +1255,6 @@
    "test": "",
    "tests": []
   },
-  "command-line.run-flow.002": {
-   "file": "specs/command-line/run-flow/running-a-diff.feature",
-   "fingerprint": "922a21dd852a",
-   "human": false,
-   "rule": "cli.run.json-carries-the-printed-report",
-   "source": "sbom_diff_lib/cli.py#_print_report",
-   "status": "verified",
-   "test": "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
-   "tests": [
-    "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
-    "tests/test_sbom_diff.py#test_json_output_carries_counts_and_markdown"
-   ]
-  },
   "command-line.run-flow.003": {
    "file": "specs/command-line/run-flow/running-a-diff.feature",
    "fingerprint": "e8494322109b",
@@ -1357,18 +1279,6 @@
    "test": "tests/test_review.py#test_list_signals_prints_the_rule_without_running_anything",
    "tests": [
     "tests/test_review.py#test_list_signals_prints_the_rule_without_running_anything"
-   ]
-  },
-  "command-line.run-flow.005": {
-   "file": "specs/command-line/run-flow/running-a-diff.feature",
-   "fingerprint": "e8494322109b",
-   "human": false,
-   "rule": "cli.signals.unknown-signal-refused",
-   "source": "sbom_diff_lib/cli.py#main",
-   "status": "verified",
-   "test": "tests/test_review.py#test_unknown_signal_is_a_usage_error",
-   "tests": [
-    "tests/test_review.py#test_unknown_signal_is_a_usage_error"
    ]
   },
   "developer-tooling.ci-platform-examples.001": {
@@ -1468,18 +1378,6 @@
     "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes"
    ]
   },
-  "diff-report.markdown-report.002": {
-   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
-   "fingerprint": "6651621beea5",
-   "human": false,
-   "rule": "diff-report.markdown.downgrade-labelled",
-   "source": "sbom_diff_lib/render.py#classify_jumps",
-   "status": "verified",
-   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
-   "tests": [
-    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
-   ]
-  },
   "diff-report.markdown-report.003": {
    "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
    "fingerprint": "fdc25634a61b",
@@ -1510,18 +1408,6 @@
    "human": false,
    "rule": "diff-report.markdown.vulnerability-delta",
    "source": "sbom_diff_lib/render.py#_render_vulnerabilities",
-   "status": "verified",
-   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
-   "tests": [
-    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
-   ]
-  },
-  "diff-report.markdown-report.006": {
-   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
-   "fingerprint": "6e3a8754645c",
-   "human": false,
-   "rule": "diff-report.markdown.rename-shows-version-only-when-changed",
-   "source": "sbom_diff_lib/render.py#_render_renamed",
    "status": "verified",
    "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
    "tests": [
@@ -1860,18 +1746,6 @@
     "tests/test_review.py#test_new_package_fires_only_for_something_that_was_not_there"
    ]
   },
-  "risk-review.review-orchestration.002": {
-   "file": "specs/risk-review/review-orchestration/review-orchestration.feature",
-   "fingerprint": "c11a4039449a",
-   "human": false,
-   "rule": "risk.scoring.score-is-sum-of-fired-signals",
-   "source": "sbom_diff_lib/review.py#_score",
-   "status": "verified",
-   "test": "tests/test_review.py#test_score_adds_up_and_picks_the_tier",
-   "tests": [
-    "tests/test_review.py#test_score_adds_up_and_picks_the_tier"
-   ]
-  },
   "risk-review.review-orchestration.003": {
    "file": "specs/risk-review/review-orchestration/review-orchestration.feature",
    "fingerprint": "3bb7ba804184",
@@ -1940,16 +1814,6 @@
     "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
     "tests/test_review.py#test_a_disabled_signal_does_not_score"
    ]
-  },
-  "risk-review.review-report.005": {
-   "file": "specs/risk-review/review-report/review-report.feature",
-   "fingerprint": "1d3a7539113b",
-   "human": false,
-   "rule": "risk-review.review-report.budget-spent-warning",
-   "source": "sbom_diff_lib/render_review.py#render_review",
-   "status": "inferred",
-   "test": "",
-   "tests": []
   },
   "risk-review.review-report.006": {
    "file": "specs/risk-review/review-report/review-report.feature",
@@ -2095,19 +1959,6 @@
     "tests/test_review.py#test_the_ranking_rule_is_in_the_report"
    ]
   },
-  "risk-review.scoring-tiers.003": {
-   "file": "specs/risk-review/scoring-tiers/review-tiers.feature",
-   "fingerprint": "435164bbe470",
-   "human": false,
-   "rule": "risk-review.tiers.unrun-signals-explained",
-   "source": "sbom_diff_lib/tiers.py#rule_markdown",
-   "status": "verified",
-   "test": "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
-   "tests": [
-    "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
-    "tests/test_review.py#test_a_disabled_signal_does_not_score"
-   ]
-  },
   "risk-review.scoring-tiers.004": {
    "file": "specs/risk-review/scoring-tiers/review-tiers.feature",
    "fingerprint": "d27de6e78a1a",
@@ -2184,16 +2035,6 @@
    "human": false,
    "rule": "sbom.dependency-graph.spdx-relationships-either-direction",
    "source": "sbom_diff_lib/graph.py#_spdx_edge",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "sbom-ingestion.dependency-graph.004": {
-   "file": "specs/sbom-ingestion/dependency-graph/dependency-fan-out.feature",
-   "fingerprint": "8560da6b3e93",
-   "human": false,
-   "rule": "sbom.dependency-graph.no-graph-is-not-checkable",
-   "source": "sbom_diff_lib/graph.py#read_graph",
    "status": "inferred",
    "test": "",
    "tests": []
@@ -2291,20 +2132,6 @@
     "tests/test_sbom_diff.py#test_unrecognized_format",
     "tests/test_sbom_diff.py#test_null_components_is_an_empty_scan_only_inside_a_real_cyclonedx_doc",
     "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate"
-   ]
-  },
-  "sbom-ingestion.format-detection.004": {
-   "file": "specs/sbom-ingestion/format-detection/sbom-file-loading.feature",
-   "fingerprint": "53c0e40527ee",
-   "human": false,
-   "rule": "sbom-ingestion.format-detection.unusable-file-exit-by-kind",
-   "source": "sbom_diff_lib/load.py#read_sbom",
-   "status": "verified",
-   "test": "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
-   "tests": [
-    "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
-    "tests/test_e2e.py#test_missing_sbom_exits_with_a_message_not_a_traceback",
-    "tests/test_sbom_diff.py#test_deeply_nested_json_is_an_input_error_not_a_recursion_crash"
    ]
   },
   "sbom-ingestion.normalization.001": {

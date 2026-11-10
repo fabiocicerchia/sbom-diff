@@ -46,13 +46,6 @@ Feature: Reading the ranked review
       | offline                                               | Nothing was fetched: this run was offline.        |
       | online, sending 4 requests and answering 2 from cache | 4 request(s) made, 2 answer(s) served from cache. |
 
-  @id:risk-review.review-report.005 @rule:risk-review.review-report.budget-spent-warning @inferred @source:sbom_diff_lib/render_review.py#render_review
-  Scenario: A run that ran out of its request budget warns that later signals are unchecked, not clean
-    Given the request budget was spent before every component was checked
-    When the operator reads the review section
-    Then a warning under the headline says the signals below are marked not checkable, not clean
-    And it advises raising "--max-requests" or re-running with a warm cache
-
   @id:risk-review.review-report.006 @rule:risk-review.review-report.silent-when-nothing-scored @inferred @source:sbom_diff_lib/render_review.py#render_review @questionable
   Scenario: When no component was scored the report has no review section at all
     Given the diff has no added or updated components to score

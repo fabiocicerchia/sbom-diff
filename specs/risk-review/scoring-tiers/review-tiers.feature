@@ -30,17 +30,6 @@ Feature: Ranking reviewed packages into tiers
     And it lists each signal that ran with its points and source, such as "`license` — License changed | 2"
     And it tells the reader that "--disable-signal maintainers" drops a signal and rescores without it
 
-  @id:risk-review.scoring-tiers.003 @rule:risk-review.tiers.unrun-signals-explained @verified @source:sbom_diff_lib/tiers.py#rule_markdown @test:tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped @test:tests/test_review.py#test_a_disabled_signal_does_not_score
-  Scenario Outline: Signals that did not run are named with the reason
-    Given the <signal> signal is <state>
-    When the operator runs the review
-    Then the ranking rule lists under "Not run on this diff:" the line "`<signal>` — <reason>"
-
-    Examples:
-      | signal     | state                                  | reason                       |
-      | advisories | unavailable because the run is offline | offline: needs OSV API       |
-      | license    | disabled on the command line           | disabled on the command line |
-
   @id:risk-review.scoring-tiers.004 @rule:ci-gating.fail-on-tier.at-or-above @verified @source:sbom_diff_lib/tiers.py#meets @test:tests/test_review.py#test_fail_on_tier_is_the_gate
   Scenario Outline: A tier gate fails on any package at or above the chosen tier
     Given the only changed package scores 3 points and lands in Glance
