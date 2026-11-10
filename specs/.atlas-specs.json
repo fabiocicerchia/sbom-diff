@@ -1,0 +1,2495 @@
+{
+ "excluded": {
+  "examples/ci-platforms": [
+   {
+    "candidate": "Alternative setup with three Devtron 'Container image' tasks described in comments",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "examples/ci-platforms/devtron-task.sh#L8-L13"
+   },
+   {
+    "candidate": "Overridable SYFT_IMAGE, SBOM_DIFF_IMAGE and WORK directory with pinned defaults",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "examples/ci-platforms/devtron-task.sh#SYFT_IMAGE"
+   },
+   {
+    "candidate": "Work directory created and mounted into containers at /work",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "examples/ci-platforms/devtron-task.sh#WORK"
+   },
+   {
+    "candidate": "Dropping the gate flags reports without ever failing",
+    "covered_by": "ci-gating gates are opt-in (ci-gating/fail-on-rules)",
+    "reason": "DUPLICATE_OF",
+    "source": "examples/ci-platforms/devtron-task.sh#L34"
+   }
+  ],
+  "sbom-diff-lib/cache": [
+   {
+    "candidate": "Cache key is a SHA-256 of method, URL and request body",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cache.py#cache_key"
+   },
+   {
+    "candidate": "Two-level directory fan-out by key prefix",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "sbom_diff_lib/cache.py#Cache._path"
+   },
+   {
+    "candidate": "Stored entry shape {stored_at, url, value}",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "sbom_diff_lib/cache.py#Cache.put"
+   },
+   {
+    "candidate": "Format-version subdirectory makes an older cache ignored after a format bump",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "sbom_diff_lib/cache.py#CACHE_FORMAT"
+   },
+   {
+    "candidate": "Atomic write via temp file and rename",
+    "covered_by": "package-intelligence.response-cache.never-breaks-a-run",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cache.py#Cache.put"
+   },
+   {
+    "candidate": "Hit and write counters",
+    "covered_by": "package-intelligence.response-cache.fresh-answers-reused",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cache.py#Cache"
+   },
+   {
+    "candidate": "An offline fetcher still answers from stored responses",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher._lookup"
+   },
+   {
+    "candidate": "A re-run within the freshness window asks the package sources nothing again",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/cache.py#Cache.get"
+   },
+   {
+    "candidate": "An answer older than the freshness window is asked for again and replaced",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/cache.py#Cache.get"
+   },
+   {
+    "candidate": "Turning reuse off makes every lookup go to the source and leaves nothing behind",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/cache.py#Cache.enabled"
+   }
+  ],
+  "sbom-diff-lib/cli": [
+   {
+    "candidate": "Review tuning flags (--young-days, --fanout-threshold, --scorecard-drop) passed into the review options",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cli.py#run_review"
+   },
+   {
+    "candidate": "Cache flags (--cache-dir, --cache-ttl, --no-cache) and --max-requests wiring into the fetcher",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cli.py#run_review"
+   },
+   {
+    "candidate": "Dependency graph read only when a selected signal needs it",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cli.py#run_review"
+   },
+   {
+    "candidate": "--disable-signal accepts repeated and comma-separated ids",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/cli.py#disabled_signals"
+   },
+   {
+    "candidate": "--fail-on-tier trips at the chosen tier or a louder one",
+    "covered_by": "cli.gates.opt-in-and-reported",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#_exit_code"
+   },
+   {
+    "candidate": "--json payload includes the review section when the review ran",
+    "covered_by": "cli.run.json-carries-the-printed-report",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#_print_report"
+   },
+   {
+    "candidate": "Help text and argument-group layout of the parser",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/cli.py#build_parser"
+   }
+  ],
+  "sbom-diff-lib/compare": [
+   {
+    "candidate": "_added_removed shared helper used by both component and vulnerability diffs",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/compare.py#_added_removed"
+   },
+   {
+    "candidate": "Counts is a frozen dataclass turned into a dict via asdict()",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/compare.py#Counts"
+   },
+   {
+    "candidate": "transitive_count is one definition shared by headline, heading and JSON so they agree",
+    "covered_by": "change-detection.change-totals.counts-contract",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/compare.py#transitive_count"
+   },
+   {
+    "candidate": "Both SBOMs declaring no license is not a license change",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/compare.py#diff"
+   },
+   {
+    "candidate": "Version-change size classification (major/minor/patch) and its report sections",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/compare.py#diff"
+   }
+  ],
+  "sbom-diff-lib/depsdev": [
+   {
+    "candidate": "Two deps.dev lookups per version (version then project), URL-encoding of names, versions and project ids",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/depsdev.py#scorecard"
+   },
+   {
+    "candidate": "Mapping purl ecosystem names to deps.dev system names (PyPI -> pypi, etc.)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/depsdev.py#DEPSDEV_SYSTEM"
+   },
+   {
+    "candidate": "Scorecard record shape (score, project, note, link property)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/depsdev.py#Scorecard"
+   },
+   {
+    "candidate": "Flagging a Scorecard fall larger than --scorecard-drop, and the points it scores",
+    "covered_by": "risk-review/risk-signals (scorecard signal, owned by the signals module)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/signals.py#scorecard_drop"
+   },
+   {
+    "candidate": "deps.dev not queried when the scorecard signal is disabled or offline",
+    "covered_by": "risk-review/signal-selection and risk-review/review-orchestration",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/review.py#_scorecard"
+   },
+   {
+    "candidate": "Integer overallScore accepted and shown as a float",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/depsdev.py#scorecard"
+   }
+  ],
+  "sbom-diff-lib/exits": [
+   {
+    "candidate": "SbomError class carries a message and a code",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/exits.py#SbomError"
+   },
+   {
+    "candidate": "Exit-code constants named after sysexits(3)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/exits.py#EXIT_DATAERR"
+   },
+   {
+    "candidate": "Which individual gates trip (major, license, thresholds, tiers) and their stderr reasons",
+    "covered_by": "ci-gating/fail-on-rules, ci-gating/change-thresholds, ci-gating/license-policy (owned by those modules)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#_exit_code"
+   },
+   {
+    "candidate": "--list-signals exits 0 without reading SBOMs",
+    "covered_by": "risk-review/signal-selection (signal listing)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#main"
+   },
+   {
+    "candidate": "Missing positional SBOM paths or a bad review option exit through the argument parser (code 2)",
+    "covered_by": "command-line/cli-options",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#main"
+   }
+  ],
+  "sbom-diff-lib/fetch": [
+   {
+    "candidate": "A gap of at least 0.2 s between two requests to the same host",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher._wait_turn"
+   },
+   {
+    "candidate": "The same lookup is asked once per run, even with --no-cache",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher._fetch"
+   },
+   {
+    "candidate": "Successful JSON answers are saved to the response cache and reused",
+    "covered_by": "package-intelligence/response-cache (cache module)",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher._lookup"
+   },
+   {
+    "candidate": "Requests carry the sbom-diff User-Agent with a project URL",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#urllib_transport"
+   },
+   {
+    "candidate": "Non-https URLs are refused (raises ValueError, which Fetcher does not catch even though it claims it never raises); every source URL is hard-coded https, so no user can reach it",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#urllib_transport"
+   },
+   {
+    "candidate": "Default backoff of 1 s then 2 s when no Retry-After is given",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher._send"
+   },
+   {
+    "candidate": "Swappable transport used so the tests can replay recorded responses",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "sbom_diff_lib/fetch.py#Transport"
+   }
+  ],
+  "sbom-diff-lib/graph": [
+   {
+    "candidate": "Fan-out growth compared against --fanout-threshold to decide hit or clear, and new packages measured from zero",
+    "covered_by": "risk-review/risk-signals (fan-out signal threshold rule, owned by signals module)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/signals.py#fanout_grew"
+   },
+   {
+    "candidate": "An unreadable or non-JSON file yields no graph instead of an error",
+    "covered_by": "the SBOM is already parsed and rejected by the loader before the graph is read; the observable result is folded into sbom.dependency-graph.no-graph-is-not-checkable",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/graph.py#read_graph"
+   },
+   {
+    "candidate": "CycloneDX root/metadata component and refs no component declares are skipped",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/graph.py#_cyclonedx_graph"
+   },
+   {
+    "candidate": "Graph nodes keyed by purl identity, falling back to name",
+    "covered_by": "sbom-ingestion/package-identity",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/graph.py#_component_key"
+   },
+   {
+    "candidate": "Graph only read when a chosen signal needs it",
+    "covered_by": "risk-review/review-orchestration",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#main"
+   }
+  ],
+  "sbom-diff-lib/load": [
+   {
+    "candidate": "A document carrying both a component list and spdxVersion is read as CycloneDX",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/load.py#load_components"
+   },
+   {
+    "candidate": "The SBOM file is read twice (once for components, once for vulnerabilities)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/load.py#read_sbom"
+   },
+   {
+    "candidate": "Components keyed by purl identity with name fallback",
+    "covered_by": "enforced in sbom_diff_lib/normalize.py (package-identity), not in this module",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/load.py#load_components"
+   },
+   {
+    "candidate": "Unexpected errors (anything not listed) keep their traceback",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/load.py#read_sbom"
+   },
+   {
+    "candidate": "Vulnerability entries without an id are keyed as '?'",
+    "covered_by": "sbom-ingestion.embedded-vulnerabilities.state-and-severity",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/load.py#load_vulnerabilities"
+   }
+  ],
+  "sbom-diff-lib/normalize": [
+   {
+    "candidate": "Components are keyed by Package URL identity, falling back to name",
+    "covered_by": "sbom-ingestion/package-identity (purl module and rename detection own the user-visible matching rule)",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/normalize.py#load_cyclonedx"
+   },
+   {
+    "candidate": "\"components\": null in a CycloneDX document is an empty scan",
+    "covered_by": "sbom-ingestion/format-detection (load module decides empty scan vs fragment)",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/normalize.py#load_cyclonedx"
+   },
+   {
+    "candidate": "Component type defaults to library; SPDX packages are always library",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/normalize.py#_spdx_component"
+   },
+   {
+    "candidate": "Ecosystem derived from purl",
+    "covered_by": "sbom-ingestion/package-identity (purl.ecosystem)",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/normalize.py#load_cyclonedx"
+   },
+   {
+    "candidate": "SPDX purl taken from the first externalRefs entry of type purl",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/normalize.py#_spdx_purl"
+   },
+   {
+    "candidate": "CycloneDX licenses sorted alphabetically",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/normalize.py#_cyclonedx_licenses"
+   }
+  ],
+  "sbom-diff-lib/osv": [
+   {
+    "candidate": "Advisory summary taken from 'summary', falling back to the first line of 'details'",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/osv.py#_advisory"
+   },
+   {
+    "candidate": "Missing advisory id shown as '?'",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/osv.py#_advisory"
+   },
+   {
+    "candidate": "Offline mode gives no OSV lookup",
+    "covered_by": "package-intelligence/network-access (offline handling in Fetcher)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/fetch.py#Fetcher"
+   },
+   {
+    "candidate": "Reporting only the advisories that are new to this version (not already on the old one)",
+    "covered_by": "risk-review/risk-signals (advisories signal)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/signals.py#new_advisories"
+   },
+   {
+    "candidate": "Advisories value object exposing a set of ids",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/osv.py#Advisories"
+   },
+   {
+    "candidate": "OSV query sent as JSON POST with Accept/Content-Type headers",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/fetch.py#Fetcher.post"
+   }
+  ],
+  "sbom-diff-lib/policy": [
+   {
+    "candidate": "--fail-on-tier gate on review tiers",
+    "covered_by": "not in this module; belongs to the risk-review/review-report module",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/render_review.py#tier_failures"
+   },
+   {
+    "candidate": "Gate settings are lifted out of argparse into a plain policy mapping",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/cli.py#policy_from_args"
+   },
+   {
+    "candidate": "Unknown --fail-on value yields no failure",
+    "covered_by": "argparse choices refuse unknown values before this is reached",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/policy.py#fail_on_verdict"
+   },
+   {
+    "candidate": "An empty deny list denies nothing",
+    "covered_by": "ci-gating.change-thresholds.opt-in-only",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/policy.py#_denied_license_hits"
+   },
+   {
+    "candidate": "Denied-license hits are de-duplicated and sorted",
+    "covered_by": "shown in the ci-gating.license-policy.denied-license-introduced examples",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/policy.py#_denied_license_hits"
+   }
+  ],
+  "sbom-diff-lib/purl": [
+   {
+    "candidate": "PURL_PREFIX check: a value not starting with \"pkg:\" counts as having no purl for ecosystem and registry name",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/purl.py#ecosystem"
+   },
+   {
+    "candidate": "purl_name returns None for a purl with no namespace/name path (e.g. \"pkg:generic\")",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/purl.py#purl_name"
+   },
+   {
+    "candidate": "Full purl-type-to-ecosystem table (cargo, gem, composer, maven, nuget, deb, rpm, apk)",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/purl.py#ECOSYSTEM"
+   },
+   {
+    "candidate": "Dependency-graph nodes keyed on the same purl identity",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/graph.py#_component_key"
+   },
+   {
+    "candidate": "Ecosystem name chooses which OSV / deps.dev / registry source is asked",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/osv.py#advisories"
+   }
+  ],
+  "sbom-diff-lib/registries": [
+   {
+    "candidate": "npm lookups use one full-packument request per package covering both versions",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/registries.py#_npm_facts"
+   },
+   {
+    "candidate": "Scoped npm names and PyPI names/versions are URL-encoded as one path segment",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/registries.py#_npm_facts"
+   },
+   {
+    "candidate": "Registry table: adding a registry is one entry plus a facts function",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/registries.py#_Registry"
+   },
+   {
+    "candidate": "VersionFacts record shape (fields None with notes)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/registries.py#VersionFacts"
+   },
+   {
+    "candidate": "Empty maintainer names are discarded and values are stripped",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/registries.py#_npm_maintainers"
+   },
+   {
+    "candidate": "Unparseable timestamps are dropped",
+    "covered_by": "package-intelligence.registry-facts.publish-time",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/registries.py#_parse_time"
+   }
+  ],
+  "sbom-diff-lib/render": [
+   {
+    "candidate": "Version change size classification (major/minor/patch/other) and downgrade detection",
+    "covered_by": "change-detection/version-changes (versions module)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/versions.py#semver_jump"
+   },
+   {
+    "candidate": "Counting transitive additions and downgrades",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/compare.py#transitive_count"
+   },
+   {
+    "candidate": "Vulnerability IDs sorted alphabetically within each group",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/render.py#_render_vulnerabilities"
+   },
+   {
+    "candidate": "Severity omitted from a newly reported vulnerability line when absent",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/render.py#_render_vulnerabilities"
+   },
+   {
+    "candidate": "Report title \"# SBOM diff\" and the review section appended after the body",
+    "covered_by": "command-line/run-flow (cli module)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/cli.py#_print_report"
+   },
+   {
+    "candidate": "classify_jumps returns a defaultdict bucketed by size",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/render.py#classify_jumps"
+   }
+  ],
+  "sbom-diff-lib/render-review": [
+   {
+    "candidate": "Ecosystem omitted from the heading when it is \"unknown\"",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/render_review.py#_render_finding"
+   },
+   {
+    "candidate": "A signal's own link takes precedence over the package link",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/render_review.py#_render_finding"
+   },
+   {
+    "candidate": "Ranking rule markdown lines (tier bands, signal table)",
+    "covered_by": "risk-review.review-report.ranking-rule-published",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/tiers.py#rule_markdown"
+   },
+   {
+    "candidate": "Report and JSON built from one Review object (two renderings)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/render_review.py#render_review"
+   },
+   {
+    "candidate": "No tier gate given means no tier failure",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/render_review.py#tier_failures"
+   }
+  ],
+  "sbom-diff-lib/review": [
+   {
+    "candidate": "The previous version is only looked up when some enabled signal compares versions",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#_subject"
+   },
+   {
+    "candidate": "Registry lookups use the purl's package name, falling back to the SBOM name",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#_registry_name"
+   },
+   {
+    "candidate": "Unasked sources carry the note 'not needed: every signal that reads it is turned off'",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#_facts"
+   },
+   {
+    "candidate": "Review carries request count, cache hits and whether the request budget was spent",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#Review"
+   },
+   {
+    "candidate": "Findings expose hits, not-checkable outcomes and per-tier grouping",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#Finding"
+   },
+   {
+    "candidate": "Fan-out is read from the new graph, and the old graph only for packages that existed before",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/review.py#_subject"
+   },
+   {
+    "candidate": "Tier thresholds (read >= 5, glance >= 2, routine)",
+    "covered_by": "risk-review/scoring-tiers (tiers module)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/tiers.py#TIERS"
+   }
+  ],
+  "sbom-diff-lib/sbom-diff-lib": [
+   {
+    "candidate": "Package docstring stating that the sbom-diff command lives in sbom_diff.py at the repository root",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/__init__.py"
+   }
+  ],
+  "sbom-diff-lib/signals": [
+   {
+    "candidate": "Subject, Outcome and Signal record shapes and the four status constants",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/signals.py#Subject"
+   },
+   {
+    "candidate": "Source keys (sbom, graph, registry, osv, deps.dev) a signal asks for, used to decide what to fetch",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/signals.py#Signal"
+   },
+   {
+    "candidate": "compares_versions flag telling the review to also look up the old version",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/signals.py#Signal"
+   },
+   {
+    "candidate": "Clear outcomes' detail wording (e.g. 'already present at 1.0.0', 'still MIT', 'OpenSSF Scorecard 8.1 (+0.0)')",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/signals.py#license_changed"
+   },
+   {
+    "candidate": "A major downgrade or a one-major bump is clear for major-skip",
+    "covered_by": "risk.signals.hit-explains-what-to-look-at",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/signals.py#major_skip"
+   },
+   {
+    "candidate": "Which link a hit carries (package page, first advisory, scorecard page)",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/signals.py#scorecard_drop"
+   },
+   {
+    "candidate": "Install scripts unchanged from the previous version are clear",
+    "covered_by": "risk.signals.hit-explains-what-to-look-at",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/signals.py#install_scripts"
+   },
+   {
+    "candidate": "Leading 'v' stripped before reading the major version",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/signals.py#_major"
+   }
+  ],
+  "sbom-diff-lib/tiers": [
+   {
+    "candidate": "Tier record shape (id, label, minimum, blurb)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/tiers.py#Tier"
+   },
+   {
+    "candidate": "TIER_IDS tuple used as --fail-on-tier choices and for sorting",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/tiers.py#TIER_IDS"
+   },
+   {
+    "candidate": "Score-range wording helper for each tier row",
+    "covered_by": "risk-review.tiers.rule-published-in-report",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff_lib/tiers.py#_band"
+   },
+   {
+    "candidate": "Tier blurb text in the rule table",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/tiers.py#TIERS"
+   }
+  ],
+  "sbom-diff-lib/types": [
+   {
+    "candidate": "Type aliases for the SBOM document, component, vulnerability, pair and change records (Json, Component, Components, Vulnerability, Pair, Changes, VulnDiff, Jump, Jumps)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/types.py"
+   },
+   {
+    "candidate": "Components are matched by Package URL identity, falling back to name, so a rename shows as a rename rather than an add plus a remove",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/types.py#Components"
+   },
+   {
+    "candidate": "The --json counts are emitted in a fixed field order via a Counts class",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/types.py"
+   },
+   {
+    "candidate": "diff() returns added, removed, changed, license changes and renamed together, in that order",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/types.py#Changes"
+   },
+   {
+    "candidate": "Version changes are bucketed by semver jump size",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "sbom_diff_lib/types.py#Jumps"
+   }
+  ],
+  "sbom-diff-lib/versions": [
+   {
+    "candidate": "When one SBOM lists a package twice at different versions, the higher version is kept",
+    "covered_by": "sbom-ingestion/normalization module (duplicate collapse rule belongs to normalize, which only borrows compare_versions)",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/normalize.py#_insert"
+   },
+   {
+    "candidate": "Downgrade count in the headline summary and the --fail-on-downgrade gate",
+    "covered_by": "change-totals / ci-gating modules own the count and the gate; this module only decides direction",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/compare.py#downgrade_count"
+   },
+   {
+    "candidate": "Fail-on major jump gate",
+    "covered_by": "ci-gating/fail-on-rules module; sizing rule is change-detection.version-changes.size-classified",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff_lib/policy.py"
+   },
+   {
+    "candidate": "Leading 'v' stripped, including repeated v's (lstrip)",
+    "covered_by": "folded into size-classified and downgrade-flagged outlines",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/versions.py#split_version"
+   },
+   {
+    "candidate": "Missing trailing segment counts as zero (1.2 == 1.2.0)",
+    "covered_by": "folded into size-classified outline row 1.2 → 1.2.1",
+    "reason": "TRIVIAL",
+    "source": "sbom_diff_lib/versions.py#_compare_core"
+   }
+  ],
+  "sbom-diff/dockerfile": [
+   {
+    "candidate": "Base image pinned to python:3.14-alpine by digest",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Dockerfile#FROM"
+   },
+   {
+    "candidate": "Build backend installed from hash-pinned requirements-build.txt with build isolation off, so building the wheel downloads nothing",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Dockerfile#RUN"
+   },
+   {
+    "candidate": "Single-stage build; temporary wheel directory and pip cache removed",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Dockerfile#RUN"
+   },
+   {
+    "candidate": "HEALTHCHECK only confirms the Python interpreter starts",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Dockerfile#HEALTHCHECK"
+   },
+   {
+    "candidate": "Recommendation to run with --read-only root filesystem (a comment only, not enforced)",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "Dockerfile#USER"
+   }
+  ],
+  "sbom-diff/makefile": [
+   {
+    "candidate": "make help lists every target with its one-line description",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#help"
+   },
+   {
+    "candidate": "make setup installs the pre-commit hook",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#setup"
+   },
+   {
+    "candidate": "make install installs the package with pip",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#install"
+   },
+   {
+    "candidate": "make dev does an editable install with the dev extras",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#dev"
+   },
+   {
+    "candidate": "make lint runs every pre-commit hook on all files (CLAUDE.md says it runs `ruff check .`, so the doc is stale)",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#lint"
+   },
+   {
+    "candidate": "make format formats code with ruff",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#format"
+   },
+   {
+    "candidate": "make test runs pytest in quiet mode",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#test"
+   },
+   {
+    "candidate": "make build produces an sdist and a wheel",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#build"
+   },
+   {
+    "candidate": "make run only prints sbom-diff --help; it never diffs anything",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#run"
+   },
+   {
+    "candidate": "make analyze type-checks the package with basedpyright",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#analyze"
+   }
+  ],
+  "sbom-diff/sbom-diff": [
+   {
+    "candidate": "Running sbom_diff.py as a script hands off to sbom_diff_lib.cli.main and exits with its return code",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "sbom_diff.py#main"
+   },
+   {
+    "candidate": "The installed sbom-diff console command is wired to sbom_diff:main",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "pyproject.toml#project.scripts"
+   },
+   {
+    "candidate": "The process exit code reflects the outcome of the run (gate failure vs unreadable SBOM)",
+    "covered_by": "ci-gating/exit-codes (owned by sbom_diff_lib.cli)",
+    "reason": "DUPLICATE_OF",
+    "source": "sbom_diff.py#main"
+   }
+  ]
+ },
+ "lifted": {
+  "examples/ci-platforms": [],
+  "sbom-diff-lib/cache": [
+   {
+    "from_source": "sbom_diff_lib/cache.py#Cache.get",
+    "rule": "package-intelligence.response-cache.stale-answers-refetched"
+   },
+   {
+    "from_source": "sbom_diff_lib/cache.py#Cache",
+    "rule": "package-intelligence.response-cache.never-breaks-a-run"
+   }
+  ],
+  "sbom-diff-lib/cli": [
+   {
+    "from_source": "sbom_diff_lib/exits.py#SbomError",
+    "rule": "cli.exit.unusable-input-by-kind"
+   }
+  ],
+  "sbom-diff-lib/compare": [],
+  "sbom-diff-lib/depsdev": [],
+  "sbom-diff-lib/exits": [
+   {
+    "from_source": "sbom_diff_lib/load.py#read_sbom",
+    "rule": "ci.exit-codes.unusable-input-exits-by-kind: an SBOM that is missing, unreadable, not JSON, not an SBOM or nested too deeply ends the run with its own exit code (66/77/74/65) and a one-line error, never as a gate failure (1) or a traceback"
+   }
+  ],
+  "sbom-diff-lib/fetch": [],
+  "sbom-diff-lib/graph": [],
+  "sbom-diff-lib/load": [],
+  "sbom-diff-lib/normalize": [],
+  "sbom-diff-lib/osv": [],
+  "sbom-diff-lib/policy": [],
+  "sbom-diff-lib/purl": [
+   {
+    "from_source": "sbom_diff_lib/normalize.py#load_cyclonedx",
+    "rule": "sbom.package-identity.name-fallback-without-purl"
+   }
+  ],
+  "sbom-diff-lib/registries": [],
+  "sbom-diff-lib/render": [],
+  "sbom-diff-lib/render-review": [],
+  "sbom-diff-lib/review": [],
+  "sbom-diff-lib/sbom-diff-lib": [],
+  "sbom-diff-lib/signals": [
+   {
+    "from_source": "sbom_diff_lib/signals.py#Signal",
+    "rule": "Offline mode runs only the signals the two SBOMs can answer, and names each skipped one with the source it needed"
+   }
+  ],
+  "sbom-diff-lib/tiers": [],
+  "sbom-diff-lib/types": [],
+  "sbom-diff-lib/versions": [],
+  "sbom-diff/dockerfile": [],
+  "sbom-diff/makefile": [],
+  "sbom-diff/sbom-diff": []
+ },
+ "retired": [
+  "change-detection.added-removed.002",
+  "change-detection.vulnerability-changes.001",
+  "ci-gating.exit-codes.001",
+  "ci-gating.exit-codes.004",
+  "ci-gating.exit-codes.007",
+  "ci-gating.fail-on-rules.002",
+  "ci-gating.fail-on-rules.003",
+  "command-line.run-flow.002",
+  "command-line.run-flow.005",
+  "diff-report.markdown-report.002",
+  "diff-report.markdown-report.006",
+  "risk-review.review-orchestration.002",
+  "risk-review.review-report.005",
+  "risk-review.scoring-tiers.003",
+  "sbom-ingestion.dependency-graph.004",
+  "sbom-ingestion.format-detection.004"
+ ],
+ "scenarios": {
+  "change-detection.added-removed.001": {
+   "file": "specs/change-detection/added-removed/added-removed-dependencies.feature",
+   "fingerprint": "2cb5fdc9eb6a",
+   "human": false,
+   "rule": "change-detection.added-removed.by-package-identity",
+   "source": "sbom_diff_lib/compare.py#diff",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds",
+   "tests": [
+    "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds"
+   ]
+  },
+  "change-detection.change-totals.001": {
+   "file": "specs/change-detection/change-totals/change-totals.feature",
+   "fingerprint": "440bdd779f1d",
+   "human": false,
+   "rule": "change-detection.change-totals.counts-contract",
+   "source": "sbom_diff_lib/compare.py#counts",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_counts_split_added_by_depth_and_spot_downgrades",
+   "tests": [
+    "tests/test_sbom_diff.py#test_counts_split_added_by_depth_and_spot_downgrades",
+    "tests/test_sbom_diff.py#test_json_output_carries_counts_and_markdown"
+   ]
+  },
+  "change-detection.change-totals.002": {
+   "file": "specs/change-detection/change-totals/change-totals.feature",
+   "fingerprint": "05b7f0d05c09",
+   "human": false,
+   "rule": "change-detection.change-totals.downgrade-counted",
+   "source": "sbom_diff_lib/compare.py#downgrade_count",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_downgrade_detection",
+   "tests": [
+    "tests/test_sbom_diff.py#test_downgrade_detection"
+   ]
+  },
+  "change-detection.license-changes.001": {
+   "file": "specs/change-detection/license-changes/license-change-detection.feature",
+   "fingerprint": "2cb5fdc9eb6a",
+   "human": false,
+   "rule": "change-detection.license-changes.declared-license-differs",
+   "source": "sbom_diff_lib/compare.py#diff",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds",
+   "tests": [
+    "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds",
+    "tests/test_sbom_diff.py#test_counts_split_added_by_depth_and_spot_downgrades"
+   ]
+  },
+  "change-detection.renames.001": {
+   "file": "specs/change-detection/renames/rename-detection.feature",
+   "fingerprint": "2cb5fdc9eb6a",
+   "human": false,
+   "rule": "change-detection.renames.same-identity-new-name-is-rename",
+   "source": "sbom_diff_lib/compare.py#diff",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_purl_matching_is_rename_aware",
+   "tests": [
+    "tests/test_sbom_diff.py#test_purl_matching_is_rename_aware"
+   ]
+  },
+  "change-detection.renames.002": {
+   "file": "specs/change-detection/renames/rename-detection.feature",
+   "fingerprint": "2cb5fdc9eb6a",
+   "human": false,
+   "rule": "change-detection.renames.renamed-version-change-not-an-update",
+   "source": "sbom_diff_lib/compare.py#diff",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "change-detection.version-changes.001": {
+   "file": "specs/change-detection/version-changes/version-change-size-and-direction.feature",
+   "fingerprint": "89a534f83ea1",
+   "human": false,
+   "rule": "change-detection.version-changes.size-classified",
+   "source": "sbom_diff_lib/versions.py#semver_jump",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_semver_classification",
+   "tests": [
+    "tests/test_sbom_diff.py#test_semver_classification",
+    "tests/test_render.py#test_explain_buckets_smaller_jumps_below_major_in_decreasing_size",
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
+   ]
+  },
+  "change-detection.version-changes.002": {
+   "file": "specs/change-detection/version-changes/version-change-size-and-direction.feature",
+   "fingerprint": "c5df44a571a4",
+   "human": false,
+   "rule": "change-detection.version-changes.downgrade-flagged",
+   "source": "sbom_diff_lib/versions.py#is_downgrade",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+    "tests/test_sbom_diff.py#test_compare_versions_orders_and_handles_prereleases",
+    "tests/test_sbom_diff.py#test_downgrade_detection"
+   ]
+  },
+  "change-detection.version-changes.003": {
+   "file": "specs/change-detection/version-changes/version-change-size-and-direction.feature",
+   "fingerprint": "89a534f83ea1",
+   "human": false,
+   "rule": "change-detection.version-changes.non-plain-versions-unsized",
+   "source": "sbom_diff_lib/versions.py#semver_jump",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "change-detection.version-changes.004": {
+   "file": "specs/change-detection/version-changes/version-change-size-and-direction.feature",
+   "fingerprint": "f52ee139ff34",
+   "human": false,
+   "rule": "change-detection.version-changes.prerelease-numbers-compared-as-text",
+   "source": "sbom_diff_lib/versions.py#_compare_prerelease",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "change-detection.version-changes.005": {
+   "file": "specs/change-detection/version-changes/version-change-size-and-direction.feature",
+   "fingerprint": "b83ceb3242bc",
+   "human": false,
+   "rule": "change-detection.version-changes.unknown-version-gaining-value-is-downgrade",
+   "source": "sbom_diff_lib/versions.py#_compare_core",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "ci-gating.change-thresholds.001": {
+   "file": "specs/ci-gating/change-thresholds/change-threshold-gates.feature",
+   "fingerprint": "283c7b265cb1",
+   "human": false,
+   "rule": "ci-gating.change-thresholds.opt-in-only",
+   "source": "sbom_diff_lib/policy.py#policy_failures",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_policy_thresholds_are_opt_in",
+   "tests": [
+    "tests/test_sbom_diff.py#test_policy_thresholds_are_opt_in",
+    "tests/test_sbom_diff.py#test_downgrade_detection"
+   ]
+  },
+  "ci-gating.change-thresholds.002": {
+   "file": "specs/ci-gating/change-thresholds/change-threshold-gates.feature",
+   "fingerprint": "961e342b122b",
+   "human": false,
+   "rule": "ci-gating.change-thresholds.added-count-limit",
+   "source": "sbom_diff_lib/policy.py#_threshold_failures",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "ci-gating.change-thresholds.003": {
+   "file": "specs/ci-gating/change-thresholds/change-threshold-gates.feature",
+   "fingerprint": "961e342b122b",
+   "human": false,
+   "rule": "ci-gating.change-thresholds.downgrade-gate",
+   "source": "sbom_diff_lib/policy.py#_threshold_failures",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_downgrade_detection",
+   "tests": [
+    "tests/test_sbom_diff.py#test_downgrade_detection"
+   ]
+  },
+  "ci-gating.change-thresholds.004": {
+   "file": "specs/ci-gating/change-thresholds/change-threshold-gates.feature",
+   "fingerprint": "283c7b265cb1",
+   "human": false,
+   "rule": "ci-gating.change-thresholds.all-reasons-reported",
+   "source": "sbom_diff_lib/policy.py#policy_failures",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_policy_thresholds_are_opt_in",
+   "tests": [
+    "tests/test_sbom_diff.py#test_policy_thresholds_are_opt_in"
+   ]
+  },
+  "ci-gating.exit-codes.002": {
+   "file": "specs/ci-gating/exit-codes/gating-a-pipeline.feature",
+   "fingerprint": "94541475912f",
+   "human": false,
+   "rule": "cli.gates.fail-on-exits-without-reason",
+   "source": "sbom_diff_lib/cli.py#_exit_code",
+   "status": "verified",
+   "test": "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
+   "tests": [
+    "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout"
+   ]
+  },
+  "ci-gating.exit-codes.003": {
+   "file": "specs/ci-gating/exit-codes/gating-a-pipeline.feature",
+   "fingerprint": "af954bdd5647",
+   "human": false,
+   "rule": "cli.gates.denied-license-list-format",
+   "source": "sbom_diff_lib/cli.py#policy_from_args",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "ci-gating.exit-codes.005": {
+   "file": "specs/ci-gating/exit-codes/exit-codes.feature",
+   "fingerprint": "53c0e40527ee",
+   "human": false,
+   "rule": "ci.exit-codes.unusable-input-exits-by-kind",
+   "source": "sbom_diff_lib/load.py#read_sbom",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
+   "tests": [
+    "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate",
+    "tests/test_sbom_diff.py#test_deeply_nested_json_is_an_input_error_not_a_recursion_crash",
+    "tests/test_e2e.py#test_missing_sbom_exits_with_a_message_not_a_traceback"
+   ]
+  },
+  "ci-gating.exit-codes.006": {
+   "file": "specs/ci-gating/exit-codes/exit-codes.feature",
+   "fingerprint": "94541475912f",
+   "human": false,
+   "rule": "ci.exit-codes.clean-run-exits-zero",
+   "source": "sbom_diff_lib/cli.py#_exit_code",
+   "status": "verified",
+   "test": "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes",
+   "tests": [
+    "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes"
+   ]
+  },
+  "ci-gating.fail-on-rules.001": {
+   "file": "specs/ci-gating/fail-on-rules/fail-on-rules.feature",
+   "fingerprint": "344dda20ac35",
+   "human": false,
+   "rule": "ci-gating.fail-on-rules.class-of-change",
+   "source": "sbom_diff_lib/policy.py#fail_on_verdict",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_fail_on_major",
+   "tests": [
+    "tests/test_sbom_diff.py#test_fail_on_major",
+    "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout",
+    "tests/test_docs_commands.py#test_every_documented_command_runs_on_the_review_example"
+   ]
+  },
+  "ci-gating.fail-on-rules.004": {
+   "file": "specs/ci-gating/fail-on-rules/fail-on-tier.feature",
+   "fingerprint": "1b141f833be2",
+   "human": false,
+   "rule": "ci-gating.fail-on-rules.tier-failure-names-five",
+   "source": "sbom_diff_lib/render_review.py#tier_failures",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "ci-gating.license-policy.001": {
+   "file": "specs/ci-gating/license-policy/license-policy-gates.feature",
+   "fingerprint": "961e342b122b",
+   "human": false,
+   "rule": "ci-gating.license-policy.license-change-gate",
+   "source": "sbom_diff_lib/policy.py#_threshold_failures",
+   "status": "verified",
+   "test": "tests/test_docs_commands.py#test_every_documented_command_runs_on_the_review_example",
+   "tests": [
+    "tests/test_docs_commands.py#test_every_documented_command_runs_on_the_review_example"
+   ]
+  },
+  "ci-gating.license-policy.002": {
+   "file": "specs/ci-gating/license-policy/license-policy-gates.feature",
+   "fingerprint": "91ac0316ebc7",
+   "human": false,
+   "rule": "ci-gating.license-policy.denied-license-introduced",
+   "source": "sbom_diff_lib/policy.py#_denied_license_hits",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_deny_licenses_matches_added_and_newly_changed",
+   "tests": [
+    "tests/test_sbom_diff.py#test_deny_licenses_matches_added_and_newly_changed"
+   ]
+  },
+  "command-line.run-flow.001": {
+   "file": "specs/command-line/run-flow/running-a-diff.feature",
+   "fingerprint": "e8494322109b",
+   "human": false,
+   "rule": "cli.run.both-sboms-required",
+   "source": "sbom_diff_lib/cli.py#main",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "command-line.run-flow.003": {
+   "file": "specs/command-line/run-flow/running-a-diff.feature",
+   "fingerprint": "e8494322109b",
+   "human": false,
+   "rule": "cli.run.review-only-when-asked",
+   "source": "sbom_diff_lib/cli.py#main",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_diff_without_the_review_flag_is_unchanged",
+   "tests": [
+    "tests/test_review.py#test_a_diff_without_the_review_flag_is_unchanged",
+    "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
+    "tests/test_review.py#test_a_tier_gate_implies_the_review"
+   ]
+  },
+  "command-line.run-flow.004": {
+   "file": "specs/command-line/run-flow/running-a-diff.feature",
+   "fingerprint": "d048558d7930",
+   "human": false,
+   "rule": "cli.signals.list-without-sboms",
+   "source": "sbom_diff_lib/cli.py#signal_listing",
+   "status": "verified",
+   "test": "tests/test_review.py#test_list_signals_prints_the_rule_without_running_anything",
+   "tests": [
+    "tests/test_review.py#test_list_signals_prints_the_rule_without_running_anything"
+   ]
+  },
+  "developer-tooling.ci-platform-examples.001": {
+   "file": "specs/developer-tooling/ci-platform-examples/devtron-sbom-gate.feature",
+   "fingerprint": "d5e8c70db4ff",
+   "human": false,
+   "rule": "ci-examples.devtron.required-settings-refused-when-missing",
+   "source": "examples/ci-platforms/devtron-task.sh#IMAGE_REPO",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "developer-tooling.ci-platform-examples.002": {
+   "file": "specs/developer-tooling/ci-platform-examples/devtron-sbom-gate.feature",
+   "fingerprint": "30f0d0cb670d",
+   "human": false,
+   "rule": "ci-examples.devtron.compares-candidate-against-deployed-tag",
+   "source": "examples/ci-platforms/devtron-task.sh#DEPLOYED_TAG",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "developer-tooling.ci-platform-examples.003": {
+   "file": "specs/developer-tooling/ci-platform-examples/devtron-sbom-gate.feature",
+   "fingerprint": "88eedc19d2dd",
+   "human": false,
+   "rule": "ci-examples.devtron.stage-fails-on-risky-change",
+   "source": "examples/ci-platforms/devtron-task.sh#SBOM_DIFF_IMAGE",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "developer-tooling.container-image.001": {
+   "file": "specs/developer-tooling/container-image/container-image.feature",
+   "fingerprint": "b0c4c261f7a7",
+   "human": false,
+   "rule": "container.image.runs-sbom-diff-with-given-arguments",
+   "source": "Dockerfile#ENTRYPOINT",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "developer-tooling.container-image.002": {
+   "file": "specs/developer-tooling/container-image/container-image.feature",
+   "fingerprint": "b0e998760f14",
+   "human": false,
+   "rule": "container.image.runs-as-unprivileged-user",
+   "source": "Dockerfile#USER",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "diff-report.json-output.001": {
+   "file": "specs/diff-report/json-output/json-diff-output.feature",
+   "fingerprint": "97a0e19ae936",
+   "human": false,
+   "rule": "diff-report.json.carries-summary-markdown-counts",
+   "source": "sbom_diff_lib/render.py#json_payload",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_json_output_carries_counts_and_markdown",
+   "tests": [
+    "tests/test_sbom_diff.py#test_json_output_carries_counts_and_markdown",
+    "tests/test_e2e.py#test_basic_example_trips_the_major_gate_and_json_matches_stdout"
+   ]
+  },
+  "diff-report.json-output.002": {
+   "file": "specs/diff-report/json-output/json-diff-output.feature",
+   "fingerprint": "97a0e19ae936",
+   "human": false,
+   "rule": "diff-report.json.changes-as-old-new-pairs",
+   "source": "sbom_diff_lib/render.py#json_payload",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "diff-report.json-output.003": {
+   "file": "specs/diff-report/json-output/json-diff-output.feature",
+   "fingerprint": "97a0e19ae936",
+   "human": false,
+   "rule": "diff-report.json.vulnerabilities-always-present",
+   "source": "sbom_diff_lib/render.py#json_payload",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "diff-report.markdown-report.001": {
+   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
+   "fingerprint": "e834f7923fd0",
+   "human": false,
+   "rule": "diff-report.markdown.sections-most-alarming-first",
+   "source": "sbom_diff_lib/render.py#explain",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+    "tests/test_render.py#test_explain_buckets_smaller_jumps_below_major_in_decreasing_size",
+    "tests/test_e2e.py#test_basic_example_prints_the_report_and_passes"
+   ]
+  },
+  "diff-report.markdown-report.003": {
+   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
+   "fingerprint": "fdc25634a61b",
+   "human": false,
+   "rule": "diff-report.markdown.transitive-additions-marked",
+   "source": "sbom_diff_lib/render.py#_render_added",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
+   ]
+  },
+  "diff-report.markdown-report.004": {
+   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
+   "fingerprint": "d2f3f9191eb7",
+   "human": false,
+   "rule": "diff-report.markdown.license-change-old-to-new",
+   "source": "sbom_diff_lib/render.py#_render_license_changes",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
+   ]
+  },
+  "diff-report.markdown-report.005": {
+   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
+   "fingerprint": "a5dab14e7225",
+   "human": false,
+   "rule": "diff-report.markdown.vulnerability-delta",
+   "source": "sbom_diff_lib/render.py#_render_vulnerabilities",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first"
+   ]
+  },
+  "diff-report.markdown-report.007": {
+   "file": "specs/diff-report/markdown-report/markdown-diff-report.feature",
+   "fingerprint": "e834f7923fd0",
+   "human": false,
+   "rule": "diff-report.markdown.no-change-no-sections",
+   "source": "sbom_diff_lib/render.py#explain",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_with_no_changes_is_a_headline_and_an_empty_body",
+   "tests": [
+    "tests/test_render.py#test_explain_with_no_changes_is_a_headline_and_an_empty_body"
+   ]
+  },
+  "diff-report.summary-headline.001": {
+   "file": "specs/diff-report/summary-headline/summary-headline.feature",
+   "fingerprint": "8c6d9ea1725c",
+   "human": false,
+   "rule": "diff-report.summary.headline-counts",
+   "source": "sbom_diff_lib/render.py#summarize",
+   "status": "verified",
+   "test": "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+   "tests": [
+    "tests/test_render.py#test_explain_renders_every_section_most_alarming_first",
+    "tests/test_render.py#test_explain_with_no_changes_is_a_headline_and_an_empty_body"
+   ]
+  },
+  "diff-report.summary-headline.002": {
+   "file": "specs/diff-report/summary-headline/summary-headline.feature",
+   "fingerprint": "8c6d9ea1725c",
+   "human": false,
+   "rule": "diff-report.summary.total-excludes-renames-and-vulns",
+   "source": "sbom_diff_lib/render.py#summarize",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.network-access.001": {
+   "file": "specs/package-intelligence/network-access/network-lookups.feature",
+   "fingerprint": "2d2370df52e9",
+   "human": false,
+   "rule": "package-intelligence.network-access.request-budget-per-run",
+   "source": "sbom_diff_lib/fetch.py#Fetcher",
+   "status": "verified",
+   "test": "tests/test_review.py#test_the_request_budget_stops_the_run_and_says_so",
+   "tests": [
+    "tests/test_review.py#test_the_request_budget_stops_the_run_and_says_so"
+   ]
+  },
+  "package-intelligence.network-access.002": {
+   "file": "specs/package-intelligence/network-access/network-lookups.feature",
+   "fingerprint": "2d2370df52e9",
+   "human": false,
+   "rule": "package-intelligence.network-access.unlimited-budget",
+   "source": "sbom_diff_lib/fetch.py#Fetcher",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.network-access.003": {
+   "file": "specs/package-intelligence/network-access/network-lookups.feature",
+   "fingerprint": "2d2370df52e9",
+   "human": false,
+   "rule": "package-intelligence.network-access.offline-sends-nothing",
+   "source": "sbom_diff_lib/fetch.py#Fetcher",
+   "status": "verified",
+   "test": "tests/test_review.py#test_offline_never_reaches_the_transport",
+   "tests": [
+    "tests/test_review.py#test_offline_never_reaches_the_transport",
+    "tests/test_integration.py#test_a_response_is_written_to_disk_and_answers_a_later_offline_run"
+   ]
+  },
+  "package-intelligence.network-access.004": {
+   "file": "specs/package-intelligence/network-access/network-lookups.feature",
+   "fingerprint": "a5b34e9e20a7",
+   "human": false,
+   "rule": "package-intelligence.network-access.failures-stated-not-crashed",
+   "source": "sbom_diff_lib/fetch.py#RawResponse",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash",
+   "tests": [
+    "tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash"
+   ]
+  },
+  "package-intelligence.network-access.005": {
+   "file": "specs/package-intelligence/network-access/network-lookups.feature",
+   "fingerprint": "2d2370df52e9",
+   "human": false,
+   "rule": "package-intelligence.network-access.honour-retry-after",
+   "source": "sbom_diff_lib/fetch.py#Fetcher",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_rate_limited_source_is_retried_after_the_delay_it_asked_for",
+   "tests": [
+    "tests/test_review.py#test_a_rate_limited_source_is_retried_after_the_delay_it_asked_for"
+   ]
+  },
+  "package-intelligence.project-health.001": {
+   "file": "specs/package-intelligence/project-health/project-health-scorecard.feature",
+   "fingerprint": "899dae640a60",
+   "human": false,
+   "rule": "package-intelligence.project-health.score-of-linked-source-project",
+   "source": "sbom_diff_lib/depsdev.py#scorecard",
+   "status": "verified",
+   "test": "tests/test_review.py#test_scorecard_drop_names_the_project_it_moved_to",
+   "tests": [
+    "tests/test_review.py#test_scorecard_drop_names_the_project_it_moved_to"
+   ]
+  },
+  "package-intelligence.project-health.002": {
+   "file": "specs/package-intelligence/project-health/project-health-scorecard.feature",
+   "fingerprint": "899dae640a60",
+   "human": false,
+   "rule": "package-intelligence.project-health.unindexed-ecosystem-not-checkable",
+   "source": "sbom_diff_lib/depsdev.py#scorecard",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.project-health.003": {
+   "file": "specs/package-intelligence/project-health/project-health-scorecard.feature",
+   "fingerprint": "899dae640a60",
+   "human": false,
+   "rule": "package-intelligence.project-health.missing-score-reason",
+   "source": "sbom_diff_lib/depsdev.py#scorecard",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.project-health.004": {
+   "file": "specs/package-intelligence/project-health/project-health-scorecard.feature",
+   "fingerprint": "10caf0959875",
+   "human": false,
+   "rule": "package-intelligence.project-health.prefers-source-repository",
+   "source": "sbom_diff_lib/depsdev.py#_source_project",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.registry-facts.001": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "a96b76921565",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.unsupported-ecosystem-not-checkable",
+   "source": "sbom_diff_lib/registries.py#version_facts",
+   "status": "verified",
+   "test": "tests/test_review.py#test_install_scripts_are_not_checkable_outside_npm",
+   "tests": [
+    "tests/test_review.py#test_install_scripts_are_not_checkable_outside_npm"
+   ]
+  },
+  "package-intelligence.registry-facts.002": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "36426daffe94",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.npm-install-scripts",
+   "source": "sbom_diff_lib/registries.py#_npm_facts",
+   "status": "verified",
+   "test": "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it",
+   "tests": [
+    "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it"
+   ]
+  },
+  "package-intelligence.registry-facts.003": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "b45aa1e9f005",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.pypi-install-code-never-clean",
+   "source": "sbom_diff_lib/registries.py#_pypi_facts",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.registry-facts.004": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "fe8edd517d84",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.maintainer-set",
+   "source": "sbom_diff_lib/registries.py#_npm_maintainers",
+   "status": "verified",
+   "test": "tests/test_review.py#test_npm_maintainer_change_names_who_arrived",
+   "tests": [
+    "tests/test_review.py#test_npm_maintainer_change_names_who_arrived",
+    "tests/test_review.py#test_pypi_maintainer_change_is_checkable_too"
+   ]
+  },
+  "package-intelligence.registry-facts.005": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "36426daffe94",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.npm-provenance",
+   "source": "sbom_diff_lib/registries.py#_npm_facts",
+   "status": "verified",
+   "test": "tests/test_review.py#test_provenance_present_before_and_absent_now",
+   "tests": [
+    "tests/test_review.py#test_provenance_present_before_and_absent_now"
+   ]
+  },
+  "package-intelligence.registry-facts.006": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "524cde0690bc",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.publish-time",
+   "source": "sbom_diff_lib/registries.py#_parse_time",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_release_younger_than_the_floor_is_flagged",
+   "tests": [
+    "tests/test_review.py#test_a_release_younger_than_the_floor_is_flagged"
+   ]
+  },
+  "package-intelligence.registry-facts.007": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "36426daffe94",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.lookup-failure-not-checkable",
+   "source": "sbom_diff_lib/registries.py#_npm_facts",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash",
+   "tests": [
+    "tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash"
+   ]
+  },
+  "package-intelligence.registry-facts.008": {
+   "file": "specs/package-intelligence/registry-facts/registry-version-facts.feature",
+   "fingerprint": "b8a16a65bfb2",
+   "human": false,
+   "rule": "package-intelligence.registry-facts.package-page-link",
+   "source": "sbom_diff_lib/registries.py#package_link",
+   "status": "verified",
+   "test": "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it",
+   "tests": [
+    "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it"
+   ]
+  },
+  "package-intelligence.response-cache.001": {
+   "file": "specs/package-intelligence/response-cache/lookup-response-cache.feature",
+   "fingerprint": "4128fab25cc5",
+   "human": false,
+   "rule": "package-intelligence.response-cache.never-breaks-a-run",
+   "source": "sbom_diff_lib/cache.py#Cache",
+   "status": "verified",
+   "test": "tests/test_integration.py#test_a_corrupt_entry_is_a_miss_not_a_crash",
+   "tests": [
+    "tests/test_integration.py#test_a_corrupt_entry_is_a_miss_not_a_crash",
+    "tests/test_integration.py#test_an_unwritable_cache_directory_still_answers"
+   ]
+  },
+  "package-intelligence.response-cache.002": {
+   "file": "specs/package-intelligence/response-cache/lookup-response-cache.feature",
+   "fingerprint": "a1a3639439f8",
+   "human": false,
+   "rule": "package-intelligence.response-cache.default-location",
+   "source": "sbom_diff_lib/cache.py#default_cache_dir",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.security-advisories.001": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "dd4371a2e6f4",
+   "human": false,
+   "rule": "package-intelligence.advisories.unsupported-ecosystem-not-queried",
+   "source": "sbom_diff_lib/osv.py#advisories",
+   "status": "verified",
+   "test": "tests/test_review.py#test_osv_is_not_queried_for_ecosystems_it_does_not_index",
+   "tests": [
+    "tests/test_review.py#test_osv_is_not_queried_for_ecosystems_it_does_not_index"
+   ]
+  },
+  "package-intelligence.security-advisories.002": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "dd4371a2e6f4",
+   "human": false,
+   "rule": "package-intelligence.advisories.osv-ecosystem-naming",
+   "source": "sbom_diff_lib/osv.py#advisories",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.security-advisories.003": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "96c025ff2162",
+   "human": false,
+   "rule": "package-intelligence.advisories.both-versions-queried",
+   "source": "sbom_diff_lib/review.py#_advisories",
+   "status": "verified",
+   "test": "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported",
+   "tests": [
+    "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported"
+   ]
+  },
+  "package-intelligence.security-advisories.004": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "006b357653fd",
+   "human": false,
+   "rule": "package-intelligence.advisories.advisory-identity-severity-link",
+   "source": "sbom_diff_lib/osv.py#_advisory",
+   "status": "verified",
+   "test": "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported",
+   "tests": [
+    "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported"
+   ]
+  },
+  "package-intelligence.security-advisories.005": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "dd4371a2e6f4",
+   "human": false,
+   "rule": "package-intelligence.advisories.lookup-failure-stated",
+   "source": "sbom_diff_lib/osv.py#advisories",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "package-intelligence.security-advisories.006": {
+   "file": "specs/package-intelligence/security-advisories/osv-advisory-lookup.feature",
+   "fingerprint": "dd4371a2e6f4",
+   "human": false,
+   "rule": "package-intelligence.advisories.ordered-by-id",
+   "source": "sbom_diff_lib/osv.py#advisories",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.review-orchestration.001": {
+   "file": "specs/risk-review/review-orchestration/review-orchestration.feature",
+   "fingerprint": "215c02b3cd86",
+   "human": false,
+   "rule": "risk.review.only-new-builds-are-judged",
+   "source": "sbom_diff_lib/review.py#_subjects",
+   "status": "verified",
+   "test": "tests/test_review.py#test_new_package_fires_only_for_something_that_was_not_there",
+   "tests": [
+    "tests/test_review.py#test_new_package_fires_only_for_something_that_was_not_there"
+   ]
+  },
+  "risk-review.review-orchestration.003": {
+   "file": "specs/risk-review/review-orchestration/review-orchestration.feature",
+   "fingerprint": "3bb7ba804184",
+   "human": false,
+   "rule": "risk.review.findings-ranked-worst-first",
+   "source": "sbom_diff_lib/review.py#review",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.review-orchestration.004": {
+   "file": "specs/risk-review/review-orchestration/review-orchestration.feature",
+   "fingerprint": "8b503ecc0242",
+   "human": false,
+   "rule": "risk.review.only-needed-sources-contacted",
+   "source": "sbom_diff_lib/review.py#Plan",
+   "status": "verified",
+   "test": "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it",
+   "tests": [
+    "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it",
+    "tests/test_review.py#test_json_carries_the_findings_and_the_rule"
+   ]
+  },
+  "risk-review.review-report.001": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "1d3a7539113b",
+   "human": false,
+   "rule": "risk-review.review-report.grouped-by-tier",
+   "source": "sbom_diff_lib/render_review.py#render_review",
+   "status": "verified",
+   "test": "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
+   "tests": [
+    "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped"
+   ]
+  },
+  "risk-review.review-report.002": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "5df94df3e212",
+   "human": false,
+   "rule": "risk-review.review-report.detail-by-tier",
+   "source": "sbom_diff_lib/render_review.py#_render_finding",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.review-report.003": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "5df94df3e212",
+   "human": false,
+   "rule": "risk-review.review-report.unchecked-signals-shown",
+   "source": "sbom_diff_lib/render_review.py#_render_finding",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.review-report.004": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "a2285ea2db3f",
+   "human": false,
+   "rule": "risk-review.review-report.ranking-rule-published",
+   "source": "sbom_diff_lib/render_review.py#_rule_block",
+   "status": "verified",
+   "test": "tests/test_review.py#test_the_ranking_rule_is_in_the_report",
+   "tests": [
+    "tests/test_review.py#test_the_ranking_rule_is_in_the_report",
+    "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
+    "tests/test_review.py#test_a_disabled_signal_does_not_score"
+   ]
+  },
+  "risk-review.review-report.006": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "1d3a7539113b",
+   "human": false,
+   "rule": "risk-review.review-report.silent-when-nothing-scored",
+   "source": "sbom_diff_lib/render_review.py#render_review",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.review-report.007": {
+   "file": "specs/risk-review/review-report/review-report.feature",
+   "fingerprint": "9550d21b72de",
+   "human": false,
+   "rule": "risk-review.review-report.json-review-contract",
+   "source": "sbom_diff_lib/render_review.py#review_payload",
+   "status": "verified",
+   "test": "tests/test_review.py#test_json_carries_the_findings_and_the_rule",
+   "tests": [
+    "tests/test_review.py#test_json_carries_the_findings_and_the_rule"
+   ]
+  },
+  "risk-review.risk-signals.001": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "c7b20d52d6f0",
+   "human": false,
+   "rule": "risk.signals.hit-explains-what-to-look-at",
+   "source": "sbom_diff_lib/signals.py#SIGNALS",
+   "status": "verified",
+   "test": "tests/test_review.py#test_new_package_fires_only_for_something_that_was_not_there",
+   "tests": [
+    "tests/test_review.py#test_new_package_fires_only_for_something_that_was_not_there",
+    "tests/test_review.py#test_major_skip_counts_the_releases_that_went_unread",
+    "tests/test_review.py#test_license_change_is_read_from_the_sboms",
+    "tests/test_review.py#test_install_script_added_is_reported_with_somewhere_to_read_it",
+    "tests/test_review.py#test_npm_maintainer_change_names_who_arrived",
+    "tests/test_review.py#test_pypi_maintainer_change_is_checkable_too",
+    "tests/test_review.py#test_provenance_present_before_and_absent_now",
+    "tests/test_review.py#test_a_release_younger_than_the_floor_is_flagged",
+    "tests/test_review.py#test_fanout_growth_comes_from_the_dependency_graph",
+    "tests/test_review.py#test_scorecard_drop_names_the_project_it_moved_to"
+   ]
+  },
+  "risk-review.risk-signals.002": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "2c4498343f04",
+   "human": false,
+   "rule": "risk.signals.advisories-new-to-version-only",
+   "source": "sbom_diff_lib/signals.py#new_advisories",
+   "status": "verified",
+   "test": "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported",
+   "tests": [
+    "tests/test_review.py#test_advisories_new_to_the_version_are_the_ones_reported",
+    "tests/test_review.py#test_an_advisory_the_old_version_already_had_is_not_news"
+   ]
+  },
+  "risk-review.risk-signals.003": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "76b080bf6574",
+   "human": false,
+   "rule": "risk.signals.thresholds-are-strict-and-configurable",
+   "source": "sbom_diff_lib/signals.py#Options",
+   "status": "verified",
+   "test": "tests/test_review.py#test_the_young_floor_is_configurable",
+   "tests": [
+    "tests/test_review.py#test_the_young_floor_is_configurable",
+    "tests/test_review.py#test_fanout_below_the_threshold_is_clear",
+    "tests/test_review.py#test_a_release_younger_than_the_floor_is_flagged",
+    "tests/test_review.py#test_fanout_growth_comes_from_the_dependency_graph"
+   ]
+  },
+  "risk-review.risk-signals.004": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "c7b20d52d6f0",
+   "human": false,
+   "rule": "risk.signals.weights",
+   "source": "sbom_diff_lib/signals.py#SIGNALS",
+   "status": "verified",
+   "test": "tests/test_review.py#test_the_ranking_rule_is_in_the_report",
+   "tests": [
+    "tests/test_review.py#test_the_ranking_rule_is_in_the_report",
+    "tests/test_review.py#test_score_adds_up_and_picks_the_tier"
+   ]
+  },
+  "risk-review.risk-signals.005": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "911f435249ca",
+   "human": false,
+   "rule": "risk.signals.new-package-not-applicable",
+   "source": "sbom_diff_lib/signals.py#_no_previous",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.risk-signals.006": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "31189b686a20",
+   "human": false,
+   "rule": "risk.signals.unanswerable-is-not-checkable",
+   "source": "sbom_diff_lib/signals.py#NOT_CHECKABLE",
+   "status": "verified",
+   "test": "tests/test_review.py#test_install_scripts_are_not_checkable_outside_npm",
+   "tests": [
+    "tests/test_review.py#test_install_scripts_are_not_checkable_outside_npm",
+    "tests/test_review.py#test_osv_is_not_queried_for_ecosystems_it_does_not_index",
+    "tests/test_review.py#test_a_registry_404_is_an_answer_not_a_crash",
+    "tests/test_review.py#test_unreadable_facts_are_never_mistaken_for_clean"
+   ]
+  },
+  "risk-review.risk-signals.007": {
+   "file": "specs/risk-review/risk-signals/risk-signals.feature",
+   "fingerprint": "816221dc64d2",
+   "human": false,
+   "rule": "risk.signals.install-scripts-unverified-previous",
+   "source": "sbom_diff_lib/signals.py#install_scripts",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "risk-review.scoring-tiers.001": {
+   "file": "specs/risk-review/scoring-tiers/review-tiers.feature",
+   "fingerprint": "6e19c84c3a59",
+   "human": false,
+   "rule": "risk-review.tiers.score-picks-tier",
+   "source": "sbom_diff_lib/tiers.py#tier_for",
+   "status": "verified",
+   "test": "tests/test_review.py#test_score_adds_up_and_picks_the_tier",
+   "tests": [
+    "tests/test_review.py#test_score_adds_up_and_picks_the_tier",
+    "tests/test_review.py#test_json_carries_the_findings_and_the_rule"
+   ]
+  },
+  "risk-review.scoring-tiers.002": {
+   "file": "specs/risk-review/scoring-tiers/review-tiers.feature",
+   "fingerprint": "435164bbe470",
+   "human": false,
+   "rule": "risk-review.tiers.rule-published-in-report",
+   "source": "sbom_diff_lib/tiers.py#rule_markdown",
+   "status": "verified",
+   "test": "tests/test_review.py#test_the_ranking_rule_is_in_the_report",
+   "tests": [
+    "tests/test_review.py#test_the_ranking_rule_is_in_the_report"
+   ]
+  },
+  "risk-review.scoring-tiers.004": {
+   "file": "specs/risk-review/scoring-tiers/review-tiers.feature",
+   "fingerprint": "d27de6e78a1a",
+   "human": false,
+   "rule": "ci-gating.fail-on-tier.at-or-above",
+   "source": "sbom_diff_lib/tiers.py#meets",
+   "status": "verified",
+   "test": "tests/test_review.py#test_fail_on_tier_is_the_gate",
+   "tests": [
+    "tests/test_review.py#test_fail_on_tier_is_the_gate"
+   ]
+  },
+  "risk-review.signal-selection.001": {
+   "file": "specs/risk-review/signal-selection/risk-signal-selection.feature",
+   "fingerprint": "a87f5cd849ab",
+   "human": false,
+   "rule": "risk.selection.disabled-signal-reported",
+   "source": "sbom_diff_lib/signals.py#select",
+   "status": "verified",
+   "test": "tests/test_review.py#test_a_disabled_signal_does_not_score",
+   "tests": [
+    "tests/test_review.py#test_a_disabled_signal_does_not_score"
+   ]
+  },
+  "risk-review.signal-selection.002": {
+   "file": "specs/risk-review/signal-selection/risk-signal-selection.feature",
+   "fingerprint": "a87f5cd849ab",
+   "human": false,
+   "rule": "risk.selection.offline-skips-network-signals",
+   "source": "sbom_diff_lib/signals.py#select",
+   "status": "verified",
+   "test": "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped",
+   "tests": [
+    "tests/test_review.py#test_offline_scores_from_the_sboms_and_says_what_it_skipped"
+   ]
+  },
+  "risk-review.signal-selection.003": {
+   "file": "specs/risk-review/signal-selection/risk-signal-selection.feature",
+   "fingerprint": "a87f5cd849ab",
+   "human": false,
+   "rule": "risk.selection.unknown-signal-refused",
+   "source": "sbom_diff_lib/signals.py#select",
+   "status": "verified",
+   "test": "tests/test_review.py#test_unknown_signal_is_a_usage_error",
+   "tests": [
+    "tests/test_review.py#test_unknown_signal_is_a_usage_error"
+   ]
+  },
+  "sbom-ingestion.dependency-graph.001": {
+   "file": "specs/sbom-ingestion/dependency-graph/dependency-fan-out.feature",
+   "fingerprint": "e23196e1125a",
+   "human": false,
+   "rule": "sbom.dependency-graph.fan-out-counts-everything-reached",
+   "source": "sbom_diff_lib/graph.py#fanout",
+   "status": "verified",
+   "test": "tests/test_review.py#test_fanout_growth_comes_from_the_dependency_graph",
+   "tests": [
+    "tests/test_review.py#test_fanout_growth_comes_from_the_dependency_graph"
+   ]
+  },
+  "sbom-ingestion.dependency-graph.002": {
+   "file": "specs/sbom-ingestion/dependency-graph/dependency-fan-out.feature",
+   "fingerprint": "e23196e1125a",
+   "human": false,
+   "rule": "sbom.dependency-graph.cycles-and-self-counted-once",
+   "source": "sbom_diff_lib/graph.py#fanout",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.dependency-graph.003": {
+   "file": "specs/sbom-ingestion/dependency-graph/dependency-fan-out.feature",
+   "fingerprint": "36b0d5cdefb5",
+   "human": false,
+   "rule": "sbom.dependency-graph.spdx-relationships-either-direction",
+   "source": "sbom_diff_lib/graph.py#_spdx_edge",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.dependency-graph.005": {
+   "file": "specs/sbom-ingestion/dependency-graph/dependency-fan-out.feature",
+   "fingerprint": "e23196e1125a",
+   "human": false,
+   "rule": "sbom.dependency-graph.package-absent-from-graph-not-checkable",
+   "source": "sbom_diff_lib/graph.py#fanout",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.dependency-graph.006": {
+   "file": "specs/sbom-ingestion/dependency-graph/direct-vs-transitive.feature",
+   "fingerprint": "731339975bb0",
+   "human": false,
+   "rule": "sbom.dependency-graph.direct-from-relationships",
+   "source": "sbom_diff_lib/normalize.py#_spdx_direct_refs",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_direct_vs_transitive_from_dependency_graph",
+   "tests": [
+    "tests/test_sbom_diff.py#test_direct_vs_transitive_from_dependency_graph",
+    "tests/test_sbom_diff.py#test_spdx_direct_from_relationships_both_directions"
+   ]
+  },
+  "sbom-ingestion.dependency-graph.007": {
+   "file": "specs/sbom-ingestion/dependency-graph/direct-vs-transitive.feature",
+   "fingerprint": "a4a9d5c1db20",
+   "human": false,
+   "rule": "sbom.dependency-graph.no-graph-means-transitive",
+   "source": "sbom_diff_lib/normalize.py#_cyclonedx_direct_refs",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_no_dependency_graph_means_everything_is_transitive",
+   "tests": [
+    "tests/test_sbom_diff.py#test_no_dependency_graph_means_everything_is_transitive"
+   ]
+  },
+  "sbom-ingestion.embedded-vulnerabilities.001": {
+   "file": "specs/sbom-ingestion/embedded-vulnerabilities/embedded-vex-reading.feature",
+   "fingerprint": "20e571e11906",
+   "human": false,
+   "rule": "sbom-ingestion.embedded-vulnerabilities.state-and-severity",
+   "source": "sbom_diff_lib/load.py#load_vulnerabilities",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_load_vulnerabilities",
+   "tests": [
+    "tests/test_sbom_diff.py#test_load_vulnerabilities"
+   ]
+  },
+  "sbom-ingestion.embedded-vulnerabilities.002": {
+   "file": "specs/sbom-ingestion/embedded-vulnerabilities/embedded-vex-reading.feature",
+   "fingerprint": "20e571e11906",
+   "human": false,
+   "rule": "sbom-ingestion.embedded-vulnerabilities.absent-means-none",
+   "source": "sbom_diff_lib/load.py#load_vulnerabilities",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_load_vulnerabilities_absent",
+   "tests": [
+    "tests/test_sbom_diff.py#test_load_vulnerabilities_absent"
+   ]
+  },
+  "sbom-ingestion.format-detection.001": {
+   "file": "specs/sbom-ingestion/format-detection/sbom-file-loading.feature",
+   "fingerprint": "45296b657f5e",
+   "human": false,
+   "rule": "sbom-ingestion.format-detection.cyclonedx-recognised",
+   "source": "sbom_diff_lib/load.py#load_components",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_null_components_is_an_empty_scan_only_inside_a_real_cyclonedx_doc",
+   "tests": [
+    "tests/test_sbom_diff.py#test_null_components_is_an_empty_scan_only_inside_a_real_cyclonedx_doc"
+   ]
+  },
+  "sbom-ingestion.format-detection.002": {
+   "file": "specs/sbom-ingestion/format-detection/sbom-file-loading.feature",
+   "fingerprint": "45296b657f5e",
+   "human": false,
+   "rule": "sbom-ingestion.format-detection.spdx-recognised",
+   "source": "sbom_diff_lib/load.py#load_components",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.format-detection.003": {
+   "file": "specs/sbom-ingestion/format-detection/sbom-file-loading.feature",
+   "fingerprint": "45296b657f5e",
+   "human": false,
+   "rule": "sbom-ingestion.format-detection.non-sbom-json-refused",
+   "source": "sbom_diff_lib/load.py#load_components",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_unrecognized_format",
+   "tests": [
+    "tests/test_sbom_diff.py#test_unrecognized_format",
+    "tests/test_sbom_diff.py#test_null_components_is_an_empty_scan_only_inside_a_real_cyclonedx_doc",
+    "tests/test_sbom_diff.py#test_unusable_input_exits_by_kind_not_as_a_gate"
+   ]
+  },
+  "sbom-ingestion.normalization.001": {
+   "file": "specs/sbom-ingestion/normalization/component-normalization.feature",
+   "fingerprint": "022b89b89626",
+   "human": false,
+   "rule": "sbom.normalization.duplicates-keep-higher-version",
+   "source": "sbom_diff_lib/normalize.py#_insert",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_duplicate_component_keeps_the_higher_version",
+   "tests": [
+    "tests/test_sbom_diff.py#test_duplicate_component_keeps_the_higher_version"
+   ]
+  },
+  "sbom-ingestion.normalization.002": {
+   "file": "specs/sbom-ingestion/normalization/component-normalization.feature",
+   "fingerprint": "a620c9d77cc5",
+   "human": false,
+   "rule": "sbom.normalization.project-not-own-dependency",
+   "source": "sbom_diff_lib/normalize.py#load_cyclonedx",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_root_component_is_not_its_own_dependency",
+   "tests": [
+    "tests/test_sbom_diff.py#test_root_component_is_not_its_own_dependency",
+    "tests/test_sbom_diff.py#test_spdx_direct_from_relationships_both_directions"
+   ]
+  },
+  "sbom-ingestion.normalization.003": {
+   "file": "specs/sbom-ingestion/normalization/component-normalization.feature",
+   "fingerprint": "55915da1523c",
+   "human": false,
+   "rule": "sbom.normalization.license-forms-read",
+   "source": "sbom_diff_lib/normalize.py#_cyclonedx_licenses",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.normalization.004": {
+   "file": "specs/sbom-ingestion/normalization/component-normalization.feature",
+   "fingerprint": "1c0024ce17d1",
+   "human": false,
+   "rule": "sbom.normalization.spdx-no-assertion-is-no-license",
+   "source": "sbom_diff_lib/normalize.py#_spdx_component",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.normalization.005": {
+   "file": "specs/sbom-ingestion/normalization/component-normalization.feature",
+   "fingerprint": "a620c9d77cc5",
+   "human": false,
+   "rule": "sbom.normalization.missing-fields-shown-as-question-mark",
+   "source": "sbom_diff_lib/normalize.py#load_cyclonedx",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.package-identity.001": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "ff1e252e6abb",
+   "human": false,
+   "rule": "sbom.package-identity.purl-matches-ignoring-version",
+   "source": "sbom_diff_lib/purl.py#purl_identity",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_purl_matching_is_rename_aware",
+   "tests": [
+    "tests/test_sbom_diff.py#test_purl_matching_is_rename_aware",
+    "tests/test_sbom_diff.py#test_purl_identity"
+   ]
+  },
+  "sbom-ingestion.package-identity.002": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "a620c9d77cc5",
+   "human": false,
+   "rule": "sbom.package-identity.name-fallback-without-purl",
+   "source": "sbom_diff_lib/normalize.py#load_cyclonedx",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds",
+   "tests": [
+    "tests/test_sbom_diff.py#test_diff_finds_all_change_kinds"
+   ]
+  },
+  "sbom-ingestion.package-identity.003": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "ff1e252e6abb",
+   "human": false,
+   "rule": "sbom.package-identity.scoped-npm-purls-distinct",
+   "source": "sbom_diff_lib/purl.py#purl_identity",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.package-identity.004": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "ff1e252e6abb",
+   "human": false,
+   "rule": "sbom.package-identity.purl-match-is-exact-text",
+   "source": "sbom_diff_lib/purl.py#purl_identity",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "sbom-ingestion.package-identity.005": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "8727b8db6f43",
+   "human": false,
+   "rule": "sbom.package-identity.ecosystem-from-purl-type",
+   "source": "sbom_diff_lib/purl.py#ecosystem",
+   "status": "verified",
+   "test": "tests/test_sbom_diff.py#test_ecosystem_from_purl",
+   "tests": [
+    "tests/test_sbom_diff.py#test_ecosystem_from_purl"
+   ]
+  },
+  "sbom-ingestion.package-identity.006": {
+   "file": "specs/sbom-ingestion/package-identity/package-identity.feature",
+   "fingerprint": "da6c09d0bd79",
+   "human": false,
+   "rule": "sbom.package-identity.registry-name-from-purl",
+   "source": "sbom_diff_lib/purl.py#purl_name",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  }
+ },
+ "taxonomy": {
+  "domains": [
+   {
+    "areas": [
+     {
+      "description": "Reading an SBOM file from disk, telling CycloneDX from SPDX, and reporting unusable files clearly.",
+      "slug": "format-detection",
+      "title": "File loading and format detection"
+     },
+     {
+      "description": "Turning both formats into the same component record with name, version, type, ecosystem, licenses and purl, and collapsing duplicates.",
+      "slug": "normalization",
+      "title": "Component normalization"
+     },
+     {
+      "description": "Matching components across SBOMs by Package URL, with a name fallback, and working out each package's ecosystem.",
+      "slug": "package-identity",
+      "title": "Package identity"
+     },
+     {
+      "description": "Reading the dependency relationships an SBOM carries to tell direct from transitive dependencies and count what one component pulls in.",
+      "slug": "dependency-graph",
+      "title": "Dependency graph"
+     },
+     {
+      "description": "Reading the vulnerability (VEX) statements a CycloneDX document carries.",
+      "slug": "embedded-vulnerabilities",
+      "title": "Embedded vulnerability data"
+     },
+     {
+      "description": "The component, change and finding records passed between every part of the tool.",
+      "slug": "component-model",
+      "title": "Shared data shapes"
+     }
+    ],
+    "description": "Reading CycloneDX and SPDX documents into one consistent picture of the components they list.",
+    "slug": "sbom-ingestion",
+    "title": "SBOM Ingestion"
+   },
+   {
+    "areas": [
+     {
+      "description": "Finding dependencies that appear or disappear between the two SBOMs, including how many added ones are transitive.",
+      "slug": "added-removed",
+      "title": "Added and removed dependencies"
+     },
+     {
+      "description": "Measuring how big each version change is (major, minor, patch) and whether it went up or down.",
+      "slug": "version-changes",
+      "title": "Version changes"
+     },
+     {
+      "description": "Reporting a package whose name changed but identity stayed the same as a rename, not an add plus a remove.",
+      "slug": "renames",
+      "title": "Rename detection"
+     },
+     {
+      "description": "Spotting components whose declared license changed between versions.",
+      "slug": "license-changes",
+      "title": "License changes"
+     },
+     {
+      "description": "Comparing embedded vulnerability statements to show what was introduced, fixed or changed status.",
+      "slug": "vulnerability-changes",
+      "title": "Vulnerability state changes"
+     },
+     {
+      "description": "The headline counts of added, removed, changed, downgraded and relicensed components.",
+      "slug": "change-totals",
+      "title": "Change totals"
+     }
+    ],
+    "description": "Working out exactly what changed between the old and new SBOM.",
+    "slug": "change-detection",
+    "title": "Change Detection"
+   },
+   {
+    "areas": [
+     {
+      "description": "One section per kind of change, most alarming first: major jumps, renames, additions, removals, license and vulnerability changes.",
+      "slug": "markdown-report",
+      "title": "Markdown report"
+     },
+     {
+      "description": "A one-line plain-language summary of everything that changed.",
+      "slug": "summary-headline",
+      "title": "Summary headline"
+     },
+     {
+      "description": "Machine-readable output carrying the counts, the rendered markdown and the review together.",
+      "slug": "json-output",
+      "title": "JSON output"
+     }
+    ],
+    "description": "Presenting the dependency changes as plain-language output for people and machines.",
+    "slug": "diff-report",
+    "title": "Diff Report"
+   },
+   {
+    "areas": [
+     {
+      "description": "The independent questions asked of every added or updated package, such as new advisories, install scripts, maintainer changes, young packages, lost provenance and fan-out growth.",
+      "slug": "risk-signals",
+      "title": "Risk signals"
+     },
+     {
+      "description": "Choosing which signals run, disabling individual ones, listing them, and skipping the ones offline mode cannot answer.",
+      "slug": "signal-selection",
+      "title": "Signal selection"
+     },
+     {
+      "description": "Adding up signal points into read, glance or routine tiers and publishing the ranking rule in the report.",
+      "slug": "scoring-tiers",
+      "title": "Scoring and tiers"
+     },
+     {
+      "description": "Building a subject for each changed package, fetching only the sources the chosen signals need, then scoring and ranking.",
+      "slug": "review-orchestration",
+      "title": "Review orchestration"
+     },
+     {
+      "description": "The ranked review section in markdown and JSON, with what to look at, links and the signals that could not be checked.",
+      "slug": "review-report",
+      "title": "Review report"
+     }
+    ],
+    "description": "The opt-in judgement layer that decides which changes a human should actually read, and why.",
+    "slug": "risk-review",
+    "title": "Risk Review"
+   },
+   {
+    "areas": [
+     {
+      "description": "Install scripts, maintainers, publish time and provenance for one package version, with a stated reason whenever a fact is unavailable.",
+      "slug": "registry-facts",
+      "title": "npm and PyPI facts"
+     },
+     {
+      "description": "Known advisories from OSV for both the old and new version of a package.",
+      "slug": "security-advisories",
+      "title": "Security advisories"
+     },
+     {
+      "description": "The OpenSSF Scorecard of the source project behind a package version, via deps.dev.",
+      "slug": "project-health",
+      "title": "Project health scorecard"
+     },
+     {
+      "description": "Polite, rate-limit-aware lookups that never crash on network problems and respect offline mode.",
+      "slug": "network-access",
+      "title": "Network access"
+     },
+     {
+      "description": "An on-disk cache of lookup responses with an expiry, which can be bypassed and never breaks a run.",
+      "slug": "response-cache",
+      "title": "Response cache"
+     }
+    ],
+    "description": "Gathering outside facts about packages from public registries and security databases.",
+    "slug": "package-intelligence",
+    "title": "Package Intelligence"
+   },
+   {
+    "areas": [
+     {
+      "description": "Failing when too many components or transitive components are added, or when a downgrade appears.",
+      "slug": "change-thresholds",
+      "title": "Change thresholds"
+     },
+     {
+      "description": "Failing on license changes or on added components carrying a denied license.",
+      "slug": "license-policy",
+      "title": "License policy"
+     },
+     {
+      "description": "Failing on any change, any major jump, any license change, or any finding at or above a chosen review tier.",
+      "slug": "fail-on-rules",
+      "title": "Fail-on rules"
+     },
+     {
+      "description": "Distinct exit codes that separate a gate failure from a missing, unreadable or malformed SBOM.",
+      "slug": "exit-codes",
+      "title": "Exit codes"
+     }
+    ],
+    "description": "Turning a dependency diff into a pass or fail result a pipeline can act on.",
+    "slug": "ci-gating",
+    "title": "CI Gating"
+   },
+   {
+    "areas": [
+     {
+      "description": "The arguments for inputs, output format, gates, review signals, offline mode and caching.",
+      "slug": "cli-options",
+      "title": "Options and flags"
+     },
+     {
+      "description": "The end-to-end run from reading both SBOMs through diff, optional review, report printing and exit code.",
+      "slug": "run-flow",
+      "title": "Run flow"
+     },
+     {
+      "description": "The sbom-diff command and package entry that hands off to the main program.",
+      "slug": "entry-point",
+      "title": "Entry point"
+     }
+    ],
+    "description": "How users run sbom-diff and control its behaviour.",
+    "slug": "command-line",
+    "title": "Command Line"
+   },
+   {
+    "areas": [
+     {
+      "description": "Make targets for install, setup, lint, format, test and package builds.",
+      "slug": "build-tasks",
+      "title": "Build and dev tasks"
+     },
+     {
+      "description": "The Docker image that packages the tool for running anywhere.",
+      "slug": "container-image",
+      "title": "Container image"
+     },
+     {
+      "description": "Ready-made scripts showing how to run sbom-diff as a step on CI platforms such as Devtron.",
+      "slug": "ci-platform-examples",
+      "title": "CI platform examples"
+     }
+    ],
+    "description": "Building, installing, containerising and wiring sbom-diff into CI platforms.",
+    "slug": "developer-tooling",
+    "title": "Build, Packaging and Integrations"
+   }
+  ]
+ }
+}
