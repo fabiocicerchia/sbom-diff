@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.2.0](https://github.com/fabiocicerchia/sbom-diff/compare/v1.1.2...v1.2.0) (2026-11-14)
+
+
+### Features
+
+* expose the JSON report path as an output ([#110](https://github.com/fabiocicerchia/sbom-diff/issues/110)) ([47ce345](https://github.com/fabiocicerchia/sbom-diff/commit/47ce345a27819a8ebf397f68f6b0488508329be4))
+* **review:** rank which dependency changes a human should read ([3932346](https://github.com/fabiocicerchia/sbom-diff/commit/3932346ddc6c2be7c825ff44108473b09e00de01))
+
+
+### Bug Fixes
+
+* 3 issues found by code-atlas (code design) ([#154](https://github.com/fabiocicerchia/sbom-diff/issues/154)) ([63fc8cb](https://github.com/fabiocicerchia/sbom-diff/commit/63fc8cb56b40aade07102318945e4f6e8e7fd1a8))
+* 3 issues found by code-atlas (quality gates) ([#144](https://github.com/fabiocicerchia/sbom-diff/issues/144)) ([6fe1a01](https://github.com/fabiocicerchia/sbom-diff/commit/6fe1a0133a5569ab36dc8eec3bb3a5216886bca5))
+* 6 issues found by code-atlas (ci that cannot fail) ([#155](https://github.com/fabiocicerchia/sbom-diff/issues/155)) ([036e787](https://github.com/fabiocicerchia/sbom-diff/commit/036e78715adcc12af089002388225167b32535c0))
+* 6 issues found by code-atlas (test suites) ([#156](https://github.com/fabiocicerchia/sbom-diff/issues/156)) ([dbdb4c5](https://github.com/fabiocicerchia/sbom-diff/commit/dbdb4c557accc16fb34bee2b9b15241fa9a6b5db))
+* **ci:** keep actions: read on the job that uploads sarif ([#109](https://github.com/fabiocicerchia/sbom-diff/issues/109)) ([00cde45](https://github.com/fabiocicerchia/sbom-diff/commit/00cde45a50a49f559b4c0bee3e0e457a750cba81))
+* **release:** grant id-token on the job that calls the signing workflow ([#82](https://github.com/fabiocicerchia/sbom-diff/issues/82)) ([f12dd65](https://github.com/fabiocicerchia/sbom-diff/commit/f12dd65265ddc41cd4d5d54c0e44c7fe546f0b70))
+* **release:** let the release PR carry a token that isn't GITHUB_TOKEN ([#92](https://github.com/fabiocicerchia/sbom-diff/issues/92)) ([7321bf5](https://github.com/fabiocicerchia/sbom-diff/commit/7321bf587d4e360ab7c60a1362c39ffe07b11c38))
+* The oldest supported Python is past end of life ([#152](https://github.com/fabiocicerchia/sbom-diff/issues/152)) ([8a56702](https://github.com/fabiocicerchia/sbom-diff/commit/8a567028ec1fee03d7edcc7921c8bb41465a5a8c))
+* Update 3 dependencies in pyproject.toml ([#151](https://github.com/fabiocicerchia/sbom-diff/issues/151)) ([d827dbb](https://github.com/fabiocicerchia/sbom-diff/commit/d827dbb0343ea2e6e19ae0394246193dad26f258))
+* Upgrade setuptools 84.0.0 → 84.1.0 ([#143](https://github.com/fabiocicerchia/sbom-diff/issues/143)) ([a60287b](https://github.com/fabiocicerchia/sbom-diff/commit/a60287bb370e812a0732808f8e36dcc00d0039da))
+* yamllint fails in the repository ([#145](https://github.com/fabiocicerchia/sbom-diff/issues/145)) ([04a802e](https://github.com/fabiocicerchia/sbom-diff/commit/04a802ea3b6c107a42de5b70ff6f5d1765f277b7))
+
 ## [1.1.2](https://github.com/fabiocicerchia/sbom-diff/compare/v1.1.1...v1.1.2) (2026-09-09)
 
 
